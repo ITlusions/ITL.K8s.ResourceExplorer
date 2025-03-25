@@ -11,8 +11,8 @@ app = FastAPI()
 app_v1 = FastAPI()
 
 app.include_router(base_router, tags=["Health"])
-app_v1.include_router(v1_resources_router)
-app_v1.include_router(v1_describe_router)
+app_v1.include_router(v1_resources_router, tags=["Simple Resources"]))
+app_v1.include_router(v1_describe_router, tags=["Describe Resources"]))
 
 app.mount("/v1", app_v1)
 
