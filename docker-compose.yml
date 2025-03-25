@@ -6,7 +6,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - KUBECONFIG=/var/.kube/46004d8e-baf7-4306-82a3-3805b2e8e777
+      - KUBECONFIG=/var/.kube/configdd
     volumes:
-      - C:/Users/nweis/AppData/Roaming/Lens/kubeconfigs:/var/.kube
+      - C:/Users/nweis/.kube:/var/.kube
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
