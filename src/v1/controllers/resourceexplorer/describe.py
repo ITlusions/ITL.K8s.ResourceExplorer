@@ -1,6 +1,6 @@
-from fastapi import HTTPException, ApiException
+from fastapi import HTTPException
 from kubernetes import client
-from typing import List, Dict, Optional
+from kubernetes.client.exceptions import ApiException
 from base.k8s_config import load_k8s_config
 
 # Load Kubernetes Configurations
@@ -25,6 +25,5 @@ def describe_resource(namespace: str, resource_type: str, resource_name: str):
             "spec": resource.spec.to_dict(),
             "status": resource.status.to_dict(),
         }
-
     except ApiException as e:
         raise HTTPException(status_code=500, detail=f"Error fetching resource: {str(e)}")

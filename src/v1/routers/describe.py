@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from kubernetes.client.exceptions import ApiException
 from v1.models.models import ResourceDetail
 from v1.controllers.resourceexplorer.describe import (
