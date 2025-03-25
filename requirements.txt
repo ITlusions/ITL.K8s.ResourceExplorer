@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+pydantic
+kubernetes
+## Testing
+pytest
+pytest-cov
+pytest-asyncio
+coverage
+httpx
+setuptools
