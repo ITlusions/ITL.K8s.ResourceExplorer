@@ -23,3 +23,21 @@ def get_all_namespaces() -> List[str]:
     except client.exceptions.ApiException as e:
         print(f"Error listing namespaces: {e}")
         return []
+
+
+def get_all_secrets() -> List[Dict[str, str]]:
+    """
+    List all secrets in the Kubernetes cluster.
+    
+    Returns:
+        List[Dict[str, str]]: A list of secret names and their corresponding namespaces.
+    """
+    try:
+        secrets = core_v1_api.list_secret_for_all_namespaces()
+        secret_names = [{"name": secret.metadata.name, "namespace": secret.metadata.namespace} for secret in secrets.items]
+        
+        return secret_names
+    
+    except client.exceptions.ApiException as e:
+        print(f"Error listing secrets: {e}")
+        return []
