@@ -103,10 +103,10 @@ jobs:
           echo "Building Docker image with tag: $FULL_TAG"
 
           # Build and tag the Docker image
-          docker build -t nweistra/itlportalds:${FULL_TAG} .
+          docker build -t nweistra/itlk8sre:${FULL_TAG} .
 
           # Promote versioned package to latest
-          docker tag nweistra/itlportalds:${FULL_TAG} nweistra/itlportalds:latest
+          docker tag nweistra/itlk8sre:${FULL_TAG} nweistra/itlk8sre:latest
 
           # Tag commit in git
           git tag -a "${FULL_TAG}" -m "Release version ${FULL_TAG}"
@@ -118,8 +118,8 @@ jobs:
       - name: Push Docker Image
         run: |
           echo "Pushing Docker image with tag: $FULL_TAG"
-          docker push nweistra/itlportalds:${FULL_TAG}
-          docker push nweistra/itlportalds:latest 
+          docker push nweistra/itlk8sre:${FULL_TAG}
+          docker push nweistra/itlk8sre:latest 
 
       - name: Push Docker Image with -release tag (only for main branch)
         if: github.ref == 'refs/heads/main'
@@ -133,12 +133,12 @@ jobs:
           echo "Pushing Docker image with release tag: $RELEASE_TAG"
 
           # Tag the image with the release suffix
-          docker tag nweistra/itlportalds:${FULL_TAG} nweistra/itlportalds:${RELEASE_TAG}
-          docker tag nweistra/itlportalds:latest nweistra/itlportalds:release-latest
+          docker tag nweistra/itlk8sre:${FULL_TAG} nweistra/itlk8sre:${RELEASE_TAG}
+          docker tag nweistra/itlk8sre:latest nweistra/itlk8sre:release-latest
 
           # Push the images with the release tags
-          docker push nweistra/itlportalds:${RELEASE_TAG}
-          docker push nweistra/itlportalds:release-latest
+          docker push nweistra/itlk8sre:${RELEASE_TAG}
+          docker push nweistra/itlk8sre:release-latest
 
           # Set the output variable for the full tag
           echo "RELEASE_TAG=${RELEASE_TAG}" >> $GITHUB_ENV
@@ -151,8 +151,8 @@ jobs:
           body: |
             Docker image version: `${{ env.RELEASE_TAG }}`
             Pushed Docker images:
-            - `nweistra/itlportalds:${{ env.RELEASE_TAG }}`
-            - `nweistra/itlportalds:latest`
+            - `nweistra/itlk8sre:${{ env.RELEASE_TAG }}`
+            - `nweistra/itlk8sre:latest`
           draft: false
           prerelease: false
         env:
