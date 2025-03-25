@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: docker.io/nweistra/itlportalds
+  repository: docker.io/nweistra/itlk8sre
   pullPolicy: Always
   tag: "latest"
 

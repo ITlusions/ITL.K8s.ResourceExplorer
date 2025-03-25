@@ -15,9 +15,3 @@ def load_k8s_config():
         )  # Default to ~/.kube/config if not set
         config.load_kube_config(config_file=kubeconfig_path)
         print(f"Loaded kubeconfig from {kubeconfig_path}")
-
-    # Initialize the Kubernetes clients
-    v1_services = client.CoreV1Api()
-    v1_ingresses = client.NetworkingV1Api()
-
-    return v1_services, v1_ingresses

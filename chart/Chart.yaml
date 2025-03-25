@@ -1,6 +1,6 @@
 apiVersion: v2
-name: itl-portal-ds
-description: ITlusions Portal Discovery Service
+name: itl-k8s-re
+description: ITlusions Kubernetes Resource Explorer Service
 type: application
 version: 0.2.0
 appVersion: "latest"
