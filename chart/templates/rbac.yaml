@@ -25,3 +25,27 @@ roleRef:
   kind: ClusterRole
   name: list-ingresses-and-services-cluster
   apiGroup: rbac.authorization.k8s.io
+  ---
+  apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRole
+  metadata:
+    name: get-namespaces-cluster
+  rules:
+    # Permissions for namespaces
+    - apiGroups: [""]
+      resources: ["namespaces"]
+      verbs: ["get"]
+
+  ---
+  apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRoleBinding
+  metadata:
+    name: bind-get-namespaces-cluster
+  subjects:
+    - kind: ServiceAccount
+      name: {{ include "itl.common.serviceAccountName" . }}
+      namespace: {{ .Release.Namespace }}
+  roleRef:
+    kind: ClusterRole
+    name: get-namespaces-cluster
+    apiGroup: rbac.authorization.k8s.io
