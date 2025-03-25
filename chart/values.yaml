@@ -49,19 +49,19 @@ ingress:
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: ds.dev.itlusions.nl
+    - host: resources.dev.itlusions.nl
       paths:
         - path: /
           pathType: ImplementationSpecific
-    - host: ds.dev.itlusions.com
+    - host: resources.dev.itlusions.com
       paths:
         - path: /
           pathType: ImplementationSpecific
   tls:
-    - secretName: ds-dev-itlusions-nl-tls
+    - secretName: resources-dev-itlusions-nl-tls
       hosts:
-        - ds.dev.itlusions.nl
-        - ds.dev.itlusions.com
+        - resources.dev.itlusions.nl
+        - resources.dev.itlusions.com
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
