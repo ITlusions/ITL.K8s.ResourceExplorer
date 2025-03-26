@@ -40,6 +40,14 @@ app_v1.include_router(v1_describe_router, tags=["Describe Resources"])
 app_v1.include_router(v1_s3_router, tags=["S3"])
 app_v1.include_router(v1_connection_router, tags=["Connection"])
 
+print(f"ROOT_PATH: {ROOT_PATH}")
+print(f"OPENAPI_URL: {OPENAPI_URL}")
+print(f"DOCS_URL: {DOCS_URL}")
+print(f"REDOC_URL: {REDOC_URL}")
+print(f"V1_OPENAPI_URL: {V1_OPENAPI_URL}")
+print(f"V1_DOCS_URL: {V1_DOCS_URL}")
+print(f"V1_REDOC_URL: {V1_REDOC_URL}")  
+
 
 app.mount("/v1", app_v1)
 
