@@ -9,7 +9,7 @@ load_k8s_config()
 core_v1_api = client.CoreV1Api()
 apps_v1_api = client.AppsV1Api()
 
-def describe_resource(namespace: str, resource_type: str, resource_name: str):
+async def describe_resource(namespace: str, resource_type: str, resource_name: str):
     try:
         if resource_type == "pod":
             resource = core_v1_api.read_namespaced_pod(name=resource_name, namespace=namespace)
