@@ -12,12 +12,11 @@ class ResourceDetail(BaseModel):
     metadata: ResourceMetadata
     spec: Dict[str, Any]
     status: Dict[str, Any]
-    enable_masking: bool = os.getenv("ENABLE_MASKING", "True").lower() in ("true", "1", "yes")  # Fetch from environment
 
     @classmethod
     def is_masking_enabled(cls) -> bool:
         """Helper method to determine if masking is enabled."""
-        return cls.enable_masking
+        return os.getenv("ENABLE_MASKING", "True").lower() in ("true", "1", "yes")
 
     @field_validator("spec", "status", mode="before")
     def mask_secrets(cls, value: Dict[str, Any]) -> Dict[str, Any]:
