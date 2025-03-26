@@ -10,7 +10,7 @@ from v1.routers.connection import router as v1_connection_router
 load_k8s_config()
 
 app = FastAPI(
-    #root_path="/resource-explorer",  # Prefix for the entire application
+    root_path="/resource-explorer",  # Prefix for the entire application
     openapi_url="/resource-explorer/openapi.json",  # Custom OpenAPI schema URL
     #docs_url="/resource-explorer/docs",  # Custom Swagger UI URL
     #redoc_url="/resource-explorer/redoc"  # Custom ReDoc URL
