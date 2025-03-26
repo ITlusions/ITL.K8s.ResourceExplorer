@@ -1,5 +1,5 @@
-from pydantic import BaseModel, field_validator
-from typing import List, Dict, Any, validator
+from pydantic import BaseModel, validator, field_validator
+from typing import List, Dict, Any
 from datetime import datetime
 
 class ResourceMetadata(BaseModel):
@@ -12,7 +12,7 @@ class ResourceDetail(BaseModel):
     spec: Dict[str, Any]
     status: Dict[str, Any]
     
-    @field_validator("spec", "status", pre=True, always=True)
+    @field_validator("spec", "status", mode="before")
     def mask_secrets(cls, value: Dict[str, Any]) -> Dict[str, Any]:
         """Truncates secret values in spec and status fields."""
         if isinstance(value, dict):
@@ -22,6 +22,7 @@ class ResourceDetail(BaseModel):
         return value
 
 class NamespaceResources(BaseModel):
+    """Represents resources grouped by namespace."""
     namespace: str
     resources: Dict[str, List[str]]  # Generalized structure for different resource types
 
