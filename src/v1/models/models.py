@@ -1,28 +1,18 @@
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
+from typing import List, Dict, Any
+from datetime import datetime
 
 class ResourceMetadata(BaseModel):
     name: str
     namespace: str
-    creationTimestamp: str
-
-
-class ResourceSpec(BaseModel):
-    spec: Dict[str, Any]
-
-
-class ResourceStatus(BaseModel):
-    status: Dict[str, Any]
-
+    creation_timestamp: datetime
 
 class ResourceDetail(BaseModel):
     metadata: ResourceMetadata
-    spec: ResourceSpec
-    status: ResourceStatus
-
+    spec: Dict[str, Any]
+    status: Dict[str, Any]
 
 class NamespaceResources(BaseModel):
     namespace: str
-    pods: List[str]
-    services: List[str]
-    deployments: List[str]
+    resources: Dict[str, List[str]]  # Generalized structure for different resource types
+
