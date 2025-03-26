@@ -1,5 +1,5 @@
 import os
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, Field
 from typing import List, Dict, Any
 from datetime import datetime
 from base.utils import mask_secrets
@@ -33,3 +33,7 @@ class S3AccountRequest(BaseModel):
     endpoint_url: str = None
     secure_flag: bool = True
     cert_check: bool = True
+
+class ConnectionRequest(BaseModel):
+    host: str = Field(..., description="The hostname or IP address to connect to.")
+    port: int = Field(..., description="The port to connect to.")
