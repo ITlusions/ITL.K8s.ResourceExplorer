@@ -14,14 +14,18 @@ class ResourceDetail(BaseModel):
     status: Dict[str, Any]
     enable_masking: bool = os.getenv("ENABLE_MASKING", "True").lower() in ("true", "1", "yes")  # Fetch from environment
 
+    @classmethod
+    def is_masking_enabled(cls) -> bool:
+        """Helper method to determine if masking is enabled."""
+        return cls.enable_masking
+
     @field_validator("spec", "status", mode="before")
-    def mask_secrets(cls, value: Dict[str, Any], values: Dict[str, Any]) -> Dict[str, Any]:
-        enable_masking = os.getenv("ENABLE_MASKING", "True").lower() in ("true", "1", "yes")
-        if not enable_masking:  # Check if masking is disabled
+    def mask_secrets(cls, value: Dict[str, Any]) -> Dict[str, Any]:
+        if not cls.is_masking_enabled():
             return value
         if isinstance(value, dict):
             for key in value:
-                if "secret" in key.lower() or "token" in key.lower() or "password" in key.lower():
+                if any(sensitive in key.lower() for sensitive in ["secret", "token", "password"]):
                     value[key] = "***REDACTED***"
         return value
 
