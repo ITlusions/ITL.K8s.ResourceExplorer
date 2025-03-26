@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse, JSONResponse
 from base.routers import router as base_router
@@ -9,16 +10,28 @@ from v1.routers.connection import router as v1_connection_router
 
 load_k8s_config()
 
+ROOT_PATH = os.getenv("ROOT_PATH", "/resource-explorer")  # Default to "/resource-explorer"
+OPENAPI_URL = os.getenv("OPENAPI_URL", f"{ROOT_PATH}/openapi.json")
+DOCS_URL = os.getenv("DOCS_URL", f"{ROOT_PATH}/docs")
+REDOC_URL = os.getenv("REDOC_URL", f"{ROOT_PATH}/redoc")
+
 app = FastAPI(
-    root_path="/resource-explorer",  # Prefix for the entire application
-    openapi_url="/resource-explorer/openapi.json",  # Custom OpenAPI schema URL
-    #docs_url="/resource-explorer/docs",  # Custom Swagger UI URL
-    #redoc_url="/resource-explorer/redoc"  # Custom ReDoc URL
+    root_path=ROOT_PATH,  # Prefix for the entire application
+    openapi_url=OPENAPI_URL,  # Custom OpenAPI schema URL
+    docs_url=DOCS_URL,  # Custom Swagger UI URL
+    redoc_url=REDOC_URL,  # Custom ReDoc URL
 )
+
+# Fetch dynamic configuration for versioned API
+V1_OPENAPI_URL = os.getenv("V1_OPENAPI_URL", f"{ROOT_PATH}/v1/openapi.json")
+V1_DOCS_URL = os.getenv("V1_DOCS_URL", f"{ROOT_PATH}/v1/docs")
+V1_REDOC_URL = os.getenv("V1_REDOC_URL", f"{ROOT_PATH}/v1/redoc")
+
+# Initialize the versioned FastAPI application
 app_v1 = FastAPI(
-    openapi_url="/resource-explorer/v1/openapi.json",  # Custom OpenAPI schema URL for v1
-    #docs_url="/resource-explorer/v1/docs",  # Custom Swagger UI URL for v1
-    #redoc_url="/resource-explorer/v1/redoc"  # Custom ReDoc URL for v1
+    openapi_url=V1_OPENAPI_URL,  # Custom OpenAPI schema URL for v1
+    docs_url=V1_DOCS_URL,  # Custom Swagger UI URL for v1
+    redoc_url=V1_REDOC_URL,  # Custom ReDoc URL for v1
 )
 
 app.include_router(base_router, tags=["Health"])
