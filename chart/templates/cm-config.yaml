@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config
+  namespace: {{ .Release.Namespace }}
+data:
+  ENABLE_MASKING: "true"
