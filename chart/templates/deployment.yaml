@@ -52,6 +52,8 @@ spec:
                 configMapKeyRef:
                   name: config
                   key: ENABLE_MASKING
+            - name: ROOT_PATH
+              value: "/"
           {{- with .Values.volumeMounts }}
           volumeMounts:
             {{- toYaml . | nindent 12 }}
