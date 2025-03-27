@@ -48,3 +48,21 @@ class CRDItemRequest(BaseModel):
     version: str
     plural: str
     namespace: Optional[str] = None
+    
+class Pod(BaseModel):
+    name: str
+    status: str
+
+class Service(BaseModel):
+    name: str
+    type: str
+
+class Deployment(BaseModel):
+    name: str
+    replicas: Optional[int]
+
+class NamespaceResources(BaseModel):
+    namespace: str
+    pods: List[Pod]
+    services: List[Service]
+    deployments: List[Deployment]
