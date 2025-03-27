@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from v1.controllers.crd import list_crds, get_crd_items
 from v1.models.models import CRDItemRequest
 
-router = APIRouter(prefix="/crds", tags=["Describe Resources"])
+router = APIRouter(prefix="/crds", tags=["CRDs"])
 
 @router.get("/list-crds", tags=["CRDs"])
 def list_all_crds():
