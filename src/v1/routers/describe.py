@@ -21,7 +21,7 @@ async def get_resource_details(namespace: str, resource_type: str, resource_name
 
 
 @k8s_resources_router.get("/resources", response_model=dict)
-async def get_resources_grouped_by_namespace():
+def get_resources_grouped_by_namespace():
     """
     API endpoint to list all Kubernetes resources grouped by namespace.
     """
