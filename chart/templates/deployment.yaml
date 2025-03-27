@@ -53,7 +53,7 @@ spec:
                   name: config
                   key: ENABLE_MASKING
             - name: ROOT_PATH
-              value: "/"
+              value: "{{ .Values.ingress.rootPath }}"
           {{- with .Values.volumeMounts }}
           volumeMounts:
             {{- toYaml . | nindent 12 }}

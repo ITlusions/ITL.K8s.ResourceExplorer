@@ -40,6 +40,8 @@ service:
 
 ingress:
   enabled: true
+  rootpath: ""
+  openapiurl: "/openapi.json"
   className: ""
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web, websecure  # Specify entry points
