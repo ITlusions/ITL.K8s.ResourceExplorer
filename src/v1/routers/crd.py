@@ -5,7 +5,7 @@ from v1.controllers.crd import (
 )
 from v1.models.models import CRDItemRequest
 
-router = APIRouter(prefix="/crds", tags=["CRDs"])
+router = APIRouter(prefix="/crds", tags=["K8s"])
 
 @router.get("/list-crds")
 def list_crds():
