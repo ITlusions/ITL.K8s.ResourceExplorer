@@ -8,6 +8,7 @@ from v1.routers.describe import k8s_resources_router as v1_k8s_resources_router
 from v1.routers.s3 import router as v1_s3_router
 from v1.routers.connection import router as v1_connection_router
 from v1.routers.crd import router as v1_crd_router
+from v1.routers.testmanager import router as v1_test_manager_router
 
 load_k8s_config()
 
@@ -29,6 +30,7 @@ app_v1.include_router(v1_k8s_resources_router , tags=["K8s Resources"])
 app_v1.include_router(v1_s3_router, tags=["S3"])
 app_v1.include_router(v1_connection_router, tags=["Connection"])
 app_v1.include_router(v1_crd_router, tags=["K8s Resources"])
+app_v1.include_router(v1_test_manager_router, tags=["Test"])
 
 app.mount("/v1", app_v1)
 
