@@ -8,6 +8,49 @@ load_k8s_config()
 
 core_v1_api = client.CoreV1Api()
 apps_v1_api = client.AppsV1Api()
+apis_api = client.ApisApi()
+
+def get_all_resource_types():
+    """
+    Fetch all available resource types in the Kubernetes cluster.
+    """
+    try:
+        # Fetch core API resources
+        core_resources = core_v1_api.get_api_resources()
+        core_resource_types = [
+            {"name": resource.name, "kind": resource.kind, "namespaced": resource.namespaced}
+            for resource in core_resources.resources
+        ]
+
+        # Fetch resources from all API groups
+        api_groups = apis_api.get_api_versions()
+        group_resource_types = []
+        for group in api_groups.groups:
+            for version in group.versions:
+                group_version = f"{group.name}/{version.version}" if group.name else version.version
+                try:
+                    group_resources = client.ApiClient().call_api(
+                        f"/apis/{group_version}", "GET", response_type="V1APIResourceList"
+                    )
+                    group_resource_types.extend([
+                        {
+                            "name": resource.name,
+                            "kind": resource.kind,
+                            "namespaced": resource.namespaced,
+                            "groupVersion": group_version,
+                        }
+                        for resource in group_resources.resources
+                    ])
+                except Exception:
+                    continue
+
+        # Combine core and group resources
+        all_resource_types = core_resource_types + group_resource_types
+
+        return {"resource_types": all_resource_types}
+
+    except ApiException as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching resource types: {str(e)}")
 
 async def describe_resource(namespace: str, resource_type: str, resource_name: str):
     try:
@@ -20,15 +63,18 @@ async def describe_resource(namespace: str, resource_type: str, resource_name: s
         else:
             raise HTTPException(status_code=400, detail=f"Unsupported resource type: {resource_type}")
 
+        if not resource:
+            raise HTTPException(status_code=404, detail=f"{resource_type.capitalize()} '{resource_name}' not found in namespace '{namespace}'")
+
         return {
             "metadata": resource.metadata.to_dict(),
             "spec": resource.spec.to_dict(),
             "status": resource.status.to_dict(),
         }
     except ApiException as e:
+        if e.status == 404:
+            raise HTTPException(status_code=404, detail=f"{resource_type.capitalize()} '{resource_name}' not found in namespace '{namespace}'")
         raise HTTPException(status_code=500, detail=f"Error fetching resource: {str(e)}")
-    
-
 
 def list_resources_grouped_by_namespace():
     """

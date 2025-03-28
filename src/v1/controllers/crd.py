@@ -49,3 +49,36 @@ def get_crd_items(group: str, version: str, plural: str, namespace: str = None):
         return items
     except ApiException as e:
         raise HTTPException(status_code=500, detail=f"Error fetching CRD items: {str(e)}")
+    
+def create_dynamic_crd_functions():
+    """
+    Dynamically create functions for each CRD to list and get items.
+    """
+    try:
+        # Fetch all CRDs
+        crds = list_crds()
+
+        # Dictionary to store dynamically created functions
+        crd_functions = {}
+
+        for crd in crds:
+            group = crd["group"]
+            version = crd["version"]
+            plural = crd["name"]
+
+            # Create a function to list items for the CRD
+            def list_items(namespace: str, group=group, version=version, plural=plural):
+                return get_crd_items(group=group, version=version, plural=plural, namespace=namespace)
+
+            # Create a function to get a specific item for the CRD
+            def get_item(namespace: str, name: str, group=group, version=version, plural=plural):
+                return get_crd_items(group=group, version=version, plural=plural, namespace=namespace).get(name)
+
+            # Add the functions to the dictionary
+            crd_functions[f"list_{plural}"] = list_items
+            crd_functions[f"get_{plural}"] = get_item
+
+        return crd_functions
+
+    except HTTPException as e:
+        raise e

@@ -66,3 +66,6 @@ class NamespaceResources(BaseModel):
     pods: List[Pod]
     services: List[Service]
     deployments: List[Deployment]
+
+class NotFoundResponse(BaseModel):
+    detail: str

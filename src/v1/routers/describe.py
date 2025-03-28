@@ -1,14 +1,27 @@
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
 from kubernetes.client.exceptions import ApiException
-from v1.models.models import ResourceDetail
+from v1.models.models import ResourceDetail, NotFoundResponse
 from v1.controllers.resourceexplorer.describe import (
+    get_all_resource_types as controller_get_all_resource_types,
     describe_resource as controller_describe_resource,
     list_resources_grouped_by_namespace as controller_list_resources_grouped_by_namespace
+    
 )
 
 k8s_resources_router = APIRouter(prefix="/k8s", tags=["K8s Resources"])
 
-@k8s_resources_router.get("/{namespace}/{resource_type}/{resource_name}", response_model=ResourceDetail)
+@k8s_resources_router.get("/resourcetypes", response_model=dict)
+async def list_resource_types():
+    """
+    API endpoint to list all available resource types in the Kubernetes cluster.
+    """
+    try:
+        return controller_get_all_resource_types()
+    except HTTPException as e:
+        raise e
+    
+@k8s_resources_router.get("/{namespace}/{resource_type}/{resource_name}", response_model=ResourceDetail, responses={404: {"model": NotFoundResponse}})
 async def get_resource_details(namespace: str, resource_type: str, resource_name: str):
     """
     API endpoint to get details of a specific Kubernetes resource.
@@ -16,8 +29,10 @@ async def get_resource_details(namespace: str, resource_type: str, resource_name
     try:
         resource_detail = await controller_describe_resource(namespace, resource_type, resource_name)
         return resource_detail
-    except ApiException as e:
-        raise HTTPException(status_code=e.status, detail=e.reason)
+    except HTTPException as e:
+        if e.status_code == 404:
+            return JSONResponse(status_code=404, content={"detail": e.detail})
+        raise
 
 
 @k8s_resources_router.get("/resources", response_model=dict)
