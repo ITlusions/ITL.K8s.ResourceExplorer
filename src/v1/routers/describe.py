@@ -26,3 +26,37 @@ def get_resources_grouped_by_namespace():
     API endpoint to list all Kubernetes resources grouped by namespace.
     """
     return controller_list_resources_grouped_by_namespace()
+
+@k8s_resources_router.get("/{namespace}/resources", response_model=dict)
+async def list_resources_by_namespace(namespace: str):
+    """
+    API endpoint to list all Kubernetes resources in a specific namespace.
+    """
+    # Filter resources by the given namespace
+    #all_resources = await controller_list_resources_grouped_by_namespace()
+    return {"message": "Not implemented yet"}
+
+@k8s_resources_router.get("/{namespace}/ingresses", response_model=dict)
+async def list_ingresses(namespace: str):
+    """
+    API endpoint to list all Ingresses in a specific namespace.
+    """
+    try:
+        # ingresses = await controller_list_ingresses(namespace)
+        # return {"namespace": namespace, "ingresses": ingresses}
+        return {"message": "Not implemented yet"}
+    except ApiException as e:
+        raise HTTPException(status_code=e.status, detail=e.reason)
+
+
+@k8s_resources_router.get("/{namespace}/services", response_model=dict)
+async def list_services(namespace: str):
+    """
+    API endpoint to list all Services in a specific namespace.
+    """
+    try:
+        # services = await controller_list_services(namespace)
+        # return {"namespace": namespace, "services": services}
+        return {"message": "Not implemented yet"}
+    except ApiException as e:
+        raise HTTPException(status_code=e.status, detail=e.reason)
