@@ -38,7 +38,7 @@ def test_s3_account_endpoint(
     """
     return controller_test_s3_account(**s3_account)
 
-@router.post("/users/", response_model=S3UserResponse)
+@router.post("/users/create_s3_user", response_model=S3UserResponse)
 def create_s3_user(
     request: S3UserCreateRequest,
     s3_account: dict = Depends(get_s3_account)
@@ -62,7 +62,7 @@ def get_s3_user(
     """
     return get_user(username=username, **s3_account)
 
-@router.put("/users/", response_model=dict)
+@router.put("/users/update_s3_user", response_model=dict)
 def update_s3_user(
     request: S3UserUpdateRequest,
     s3_account: dict = Depends(get_s3_account)
@@ -76,7 +76,7 @@ def update_s3_user(
         **s3_account
     )
 
-@router.delete("/users/", response_model=dict)
+@router.delete("/users/delete_s3_user", response_model=dict)
 def delete_s3_user(
     request: S3UserDeleteRequest,
     s3_account: dict = Depends(get_s3_account)
