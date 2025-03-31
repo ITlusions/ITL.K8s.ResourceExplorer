@@ -75,3 +75,28 @@ async def list_services(namespace: str):
         return {"message": "Not implemented yet"}
     except ApiException as e:
         raise HTTPException(status_code=e.status, detail=e.reason)
+    
+@k8s_resources_router.get("/{namespace}/jobs", response_model=dict)
+async def list_jobs(namespace: str):
+    """
+    API endpoint to list all Jobs in a specific namespace.
+    """
+    try:
+        # jobs = await controller_list_jobs(namespace)
+        # return {"namespace": namespace, "jobs": jobs}
+        return {"message": "Not implemented yet"}
+    except ApiException as e:
+        raise HTTPException(status_code=e.status, detail=e.reason)
+
+
+@k8s_resources_router.post("/{namespace}/cronjobs/{cronjob_name}/trigger", response_model=dict)
+async def trigger_cronjob(namespace: str, cronjob_name: str):
+    """
+    API endpoint to manually trigger a Kubernetes CronJob.
+    """
+    try:
+        # result = await controller_trigger_cronjob(namespace, cronjob_name)
+        # return {"namespace": namespace, "cronjob_name": cronjob_name, "result": result}
+        return {"message": "Not implemented yet"}
+    except ApiException as e:
+        raise HTTPException(status_code=e.status, detail=e.reason)
