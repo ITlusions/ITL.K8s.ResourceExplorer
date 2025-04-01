@@ -6,14 +6,3 @@ spec:
   redirectScheme:
     scheme: "https"  # Use "http" if you don't have SSL
     permanent: false  # Set to true for a 301 redirect, false for a 302 redirect
----
-apiVersion: traefik.io/v1alpha1
-kind: Middleware
-metadata:
-  name: ip-blocker
-spec:
-  ipWhiteList:
-    sourceRange:
-      - "0.0.0.0/0"  # Allow all IPs
-    denyList:
-      - "154.83.103.14"
