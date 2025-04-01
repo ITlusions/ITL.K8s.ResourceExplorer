@@ -69,3 +69,11 @@ class NamespaceResources(BaseModel):
 
 class NotFoundResponse(BaseModel):
     detail: str
+    
+class KubernetesEvent(BaseModel):
+    type: str
+    name: str
+    namespace: Optional[str]
+    message: str
+    reason: Optional[str]
+    timestamp: Optional[str]

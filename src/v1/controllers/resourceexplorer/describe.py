@@ -1,8 +1,8 @@
 from fastapi import HTTPException
-from kubernetes import client
+from kubernetes import client, watch
 from kubernetes.client.exceptions import ApiException
 from base.k8s_config import load_k8s_config
-
+import asyncio
 # Load Kubernetes Configurations
 load_k8s_config()
 
@@ -103,3 +103,26 @@ def list_resources_grouped_by_namespace():
 
     except ApiException as e:
         raise HTTPException(status_code=500, detail=f"Error fetching resources: {str(e)}")
+    
+
+async def stream_kubernetes_events():
+    """
+    Stream Kubernetes events in real-time.
+    """
+    v1 = client.CoreV1Api()
+    w = watch.Watch()
+
+    try:
+        # Watch events in the cluster
+        loop = asyncio.get_event_loop()
+        for event in await loop.run_in_executor(None, lambda: w.stream(core_v1_api.list_event_for_all_namespaces, timeout_seconds=0)):
+            # Format the event as a Server-Sent Event (SSE)
+            event_type = event.get("type", "UNKNOWN")
+            event_object = event.get("object", {})
+            event_name = getattr(event_object.metadata, "name", "UNKNOWN")
+            event_message = getattr(event_object, "message", "No message available")
+            yield f"data: {event_type} - {event_name} - {event_message}\n\n"
+    except Exception as e:
+        yield f"data: Error: {str(e)}\n\n"
+    finally:
+        w.stop()
