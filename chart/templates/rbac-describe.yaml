@@ -29,3 +29,27 @@ roleRef:
   kind: ClusterRole
   name: describe-resources-cluster
   apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: stream-events-cluster
+rules:
+  # Permissions for events
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["watch", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: bind-stream-events-cluster
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "itl.common.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: stream-events-cluster
+  apiGroup: rbac.authorization.k8s.io
