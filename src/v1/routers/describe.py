@@ -179,6 +179,9 @@ async def stream_events():
     API endpoint to stream Kubernetes events in real-time.
     """
     try:
-        return StreamingResponse(controller_stream_kubernetes_events(), media_type="text/event-stream")
-    except HTTPException as e:
-        raise e
+    #     return StreamingResponse(controller_stream_kubernetes_events(), media_type="text/event-stream")
+    # except HTTPException as e:
+    #     raise e
+        return {"message": "Not implemented yet"}
+    except ApiException as e:
+        raise HTTPException(status_code=e.status, detail=e.reason)
