@@ -6,17 +6,29 @@ def test_artifactory_repository(
     repository_url: str,
     username: Optional[str] = None,
     password: Optional[str] = None,
+    oauth2_token: Optional[str] = None,
     skip_tls_verify: bool = False
 ) -> Dict:
     """
     Test the connectivity to an Artifactory PyPI repository.
-    
+
     :param repository_url: The URL of the Artifactory PyPI repository.
-    :param username: Optional username for authentication.
-    :param password: Optional password for authentication.
+    :param username: Optional username for basic authentication.
+    :param password: Optional password for basic authentication.
+    :param oauth2_token: Optional OAuth2 token for authentication.
     :param skip_tls_verify: Whether to skip TLS certificate verification.
     :return: A dictionary with the test result.
     """
+    headers = {}
+    auth = None
+
+    # Use OAuth2 token if provided
+    if oauth2_token:
+        headers["Authorization"] = f"Bearer {oauth2_token}"
+    # Use basic authentication if username and password are provided
+    elif username and password:
+        auth = HTTPBasicAuth(username, password)
+
     try:
         # Convert repository_url to a string (if it's a Pydantic HttpUrl object)
         repository_url = str(repository_url)
@@ -28,7 +40,8 @@ def test_artifactory_repository(
         # Test the repository URL
         response = requests.get(
             repository_url,
-            auth=HTTPBasicAuth(username, password) if username and password else None,
+            headers=headers,
+            auth=auth,
             verify=not skip_tls_verify  # Control TLS verification
         )
 

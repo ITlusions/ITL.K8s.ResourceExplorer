@@ -1,20 +1,26 @@
-from fastapi import APIRouter, HTTPException
-from v1.models.pypi import ArtifactoryTestRequest
-from v1.controllers.pypi import test_artifactory_repository
+import requests
+from typing import Dict, Optional
 
-router = APIRouter()
+def test_artifactory_repository_with_oauth(
+    repository_url: str,
+    oauth2_token: Optional[str] = None,
+    skip_tls_verify: bool = False
+) -> Dict:
+    headers = {}
+    if oauth2_token:
+        headers["Authorization"] = f"Bearer {oauth2_token}"
 
-@router.post("/pypi/test")
-async def test_artifactory(request: ArtifactoryTestRequest):
-    """
-    Test the connectivity to a PyPI repository.
-    """
-    result = test_artifactory_repository(
-        repository_url=request.repository_url,
-        username=request.username,
-        password=request.password,
-        skip_tls_verify=request.skip_tls_verify
-    )
-    if result["status"] == "error":
-        raise HTTPException(status_code=400, detail=result["message"])
-    return result
+    try:
+        response = requests.get(
+            repository_url,
+            headers=headers,
+            verify=not skip_tls_verify
+        )
+        if response.status_code == 200:
+            return {"status": "success", "message": "Repository is accessible"}
+        elif response.status_code == 401:
+            return {"status": "error", "message": "Authentication failed"}
+        else:
+            return {"status": "error", "message": f"Unexpected response: {response.status_code}"}
+    except requests.exceptions.RequestException as e:
+        return {"status": "error", "message": f"Connection error: {str(e)}"}
