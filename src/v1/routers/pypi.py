@@ -7,7 +7,7 @@ router = APIRouter()
 @router.post("/pypi/test")
 async def test_artifactory(request: ArtifactoryTestRequest):
     """
-    Test the connectivity to an PyPI repository.
+    Test the connectivity to a PyPI repository.
     """
     result = test_artifactory_repository(
         repository_url=request.repository_url,

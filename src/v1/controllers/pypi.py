@@ -18,6 +18,9 @@ def test_artifactory_repository(
     :return: A dictionary with the test result.
     """
     try:
+        # Convert repository_url to a string (if it's a Pydantic HttpUrl object)
+        repository_url = str(repository_url)
+
         # Add trailing slash if not present
         if not repository_url.endswith("/"):
             repository_url += "/"
