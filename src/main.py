@@ -9,6 +9,7 @@ from v1.routers import (
     connection as v1_connection_router,
     crd as v1_crd_router,
     testmanager as v1_test_manager_router,
+    pypi as v1_pypi_router,
 )
 
 # Load Kubernetes configuration
@@ -31,6 +32,7 @@ v1_routers = [
     (v1_connection_router.router, "Connection"),
     (v1_test_manager_router.router, "Test"),
     (v1_crd_router.router, "K8s Resources"),
+    (v1_pypi_router.router, "PyPi"),
 ]
 
 for router, tag in v1_routers:
