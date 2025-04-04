@@ -10,3 +10,5 @@ pytest-asyncio
 coverage
 httpx
 setuptools
+azure-identity 
+azure-containerregistry
