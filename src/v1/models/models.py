@@ -51,11 +51,6 @@ class S3AccountRequest(BaseModel):
     secure_flag: bool = Field(True, description="Flag to indicate if the connection is secure.")
     cert_check: bool = Field(True, description="Flag to indicate if certificate validation is enabled.")
 
-    @root_validator
-    def validate_credentials(cls, values):
-        if not values.get("access_key") or not values.get("secret_key"):
-            raise ValueError("Both access_key and secret_key must be provided.")
-        return values
 
 
 class ConnectionRequest(BaseModel):
