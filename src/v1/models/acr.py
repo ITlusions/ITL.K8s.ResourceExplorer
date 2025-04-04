@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import List, Dict
 
 class ACRCopyRequest(BaseModel):
     source_registry_url: str
@@ -16,3 +17,13 @@ class ACRCopyRequest(BaseModel):
 class ACRCopyResponse(BaseModel):
     source: dict
     destination: dict
+
+class ACRListRequest(BaseModel):
+    registry_url: str
+    client_id: str
+    client_secret: str
+    tenant_id: str
+
+class ACRListResponse(BaseModel):
+    registry_url: str
+    repositories: Dict[str, List[str]] 
