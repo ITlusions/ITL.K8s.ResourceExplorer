@@ -43,3 +43,15 @@ class ACRListResponse(BaseModel):
         if "repositories" in values:
             return len(values["repositories"])
         return 0
+
+class ACRAuthRequest(BaseModel):
+    registry_url: str
+    token_username: Optional[str] = None
+    token_password: Optional[str] = None
+    client_id: Optional[str] = None
+    client_secret: Optional[str] = None
+    tenant_id: Optional[str] = None
+
+class ACRAuthResponse(BaseModel):
+    registry_url: str
+    repositories: Dict[str, List[str]]  # Repository name as key, list of image tags as value

@@ -19,25 +19,46 @@ def authenticate_to_acr(client_id: str, client_secret: str, tenant_id: str):
 
 def list_acr_repositories_and_images(
     registry_url: str,
-    client_id: str,
-    client_secret: str,
-    tenant_id: str,
+    token_username: str = None,
+    token_password: str = None,
+    client_id: str = None,
+    client_secret: str = None,
+    tenant_id: str = None,
 ) -> dict:
     """
-    Authenticates to an Azure Container Registry (ACR) and retrieves a list of repositories and their images.
+    Authenticates to an Azure Container Registry (ACR) using either a repository-scoped token
+    or Azure Active Directory credentials, and retrieves a list of repositories and their images.
 
     Args:
         registry_url (str): The URL of the ACR (e.g., "myregistry.azurecr.io").
-        client_id (str): Client ID for the ACR.
-        client_secret (str): Client secret for the ACR.
-        tenant_id (str): Tenant ID for the ACR.
+        token_username (str, optional): The username of the repository-scoped token.
+        token_password (str, optional): The password of the repository-scoped token.
+        client_id (str, optional): Client ID for Azure Active Directory authentication.
+        client_secret (str, optional): Client secret for Azure Active Directory authentication.
+        tenant_id (str, optional): Tenant ID for Azure Active Directory authentication.
 
     Returns:
         dict: A dictionary containing repositories and their associated image tags.
     """
     try:
-        # Authenticate to the registry
-        credential = authenticate_to_acr(client_id, client_secret, tenant_id)
+        # Determine the authentication method
+        if token_username and token_password:
+            # Authenticate using repository-scoped token
+            credential = (token_username, token_password)
+        elif client_id and client_secret and tenant_id:
+            # Authenticate using Azure Active Directory credentials
+            credential = ClientSecretCredential(
+                client_id=client_id,
+                client_secret=client_secret,
+                tenant_id=tenant_id,
+            )
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid authentication parameters. Provide either token_username/token_password or client_id/client_secret/tenant_id.",
+            )
+
+        # Create the ACR client
         client = ContainerRegistryClient(endpoint=registry_url, credential=credential)
 
         # Fetch repositories

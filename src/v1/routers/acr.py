@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from v1.models.acr import ACRCopyRequest, ACRCopyResponse, ACRListRequest, ACRListResponse
+from v1.models.acr import ACRCopyRequest, ACRCopyResponse, ACRAuthRequest, ACRAuthResponse
 from v1.controllers.acr import copy_acr_image_with_credentials, list_acr_repositories_and_images
 
 router = APIRouter(prefix="/acr", tags=["ACR"])
@@ -28,14 +28,17 @@ def copy_acr_image_with_credentials_endpoint(request: ACRCopyRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/list", response_model=ACRListResponse)
-def list_acr_repositories_and_images_endpoint(request: ACRListRequest):
+@router.post("/list", response_model=ACRAuthResponse)
+def list_acr_repositories_and_images_endpoint(request: ACRAuthRequest):
     """
-    API endpoint to list repositories and images in an Azure Container Registry (ACR).
+    API endpoint to list repositories and images in an Azure Container Registry (ACR)
+    using either a repository-scoped token or Azure Active Directory credentials.
     """
     try:
         return list_acr_repositories_and_images(
             registry_url=request.registry_url,
+            token_username=request.token_username,
+            token_password=request.token_password,
             client_id=request.client_id,
             client_secret=request.client_secret,
             tenant_id=request.tenant_id,
