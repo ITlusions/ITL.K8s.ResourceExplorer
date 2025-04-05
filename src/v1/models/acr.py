@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, HttpUrl, SecretStr, validator
+from pydantic import BaseModel, Field, HttpUrl, SecretStr, validator, field_validator
 from typing import List, Dict, Optional
 
 class ACRCopyRequest(BaseModel):
@@ -38,7 +38,8 @@ class ACRListResponse(BaseModel):
     repositories: Dict[str, List[str]] = Field(..., description="Mapping of repositories to their image tags")
     total_repositories: int = Field(..., description="Total number of repositories in the registry")
 
-    @validator("total_repositories", pre=True, always=True)
+    @field_validator("total_repositories", mode="before")
+    @classmethod
     def calculate_total_repositories(cls, value, values):
         if "repositories" in values:
             return len(values["repositories"])
@@ -52,14 +53,14 @@ class ACRAuthRequest(BaseModel):
     client_secret: Optional[SecretStr] = Field(None, description="Client secret for OAuth-based authentication")
     tenant_id: Optional[str] = Field(None, description="Tenant ID for OAuth-based authentication")
 
-    @validator("token_username", "token_password", "client_id", "client_secret", "tenant_id", pre=True, always=True)
+    @field_validator("token_username", "token_password", "client_id", "client_secret", "tenant_id", mode="before")
+    @classmethod
     def validate_auth_fields(cls, value, info):
-        if not value and info.name in ["token_username", "token_password"]:
-            raise ValueError(f"{info.name} is required for token-based authentication")
-        if not value and info.name in ["client_id", "client_secret", "tenant_id"]:
-            raise ValueError(f"{info.name} is required for OAuth-based authentication")
+        if not value and info.field_name in ["token_username", "token_password"]:
+            raise ValueError(f"{info.field_name} is required for token-based authentication")
+        if not value and info.field_name in ["client_id", "client_secret", "tenant_id"]:
+            raise ValueError(f"{info.field_name} is required for OAuth-based authentication")
         return value
-
 
 class ACRAuthResponse(BaseModel):
     registry_url: str = Field(..., description="URL of the container registry")
