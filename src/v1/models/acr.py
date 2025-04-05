@@ -27,14 +27,14 @@ class ACRCopyResponse(BaseModel):
     message: Optional[str] = Field(None, description="Additional information about the operation")
 
 class ACRListRequest(BaseModel):
-    registry_url: HttpUrl = Field(..., description="URL of the container registry")
+    registry_url: str = Field(..., description="URL of the container registry")
     client_id: str = Field(..., description="Client ID for the registry authentication")
     client_secret: SecretStr = Field(..., description="Client secret for the registry authentication")
     tenant_id: str = Field(..., description="Tenant ID for the registry authentication")
     include_tags: Optional[bool] = Field(False, description="Whether to include image tags in the response")
 
 class ACRListResponse(BaseModel):
-    registry_url: HttpUrl = Field(..., description="URL of the container registry")
+    registry_url: str = Field(..., description="URL of the container registry")
     repositories: Dict[str, List[str]] = Field(..., description="Mapping of repositories to their image tags")
     total_repositories: int = Field(..., description="Total number of repositories in the registry")
 
