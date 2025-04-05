@@ -1,47 +1,44 @@
 from fastapi import APIRouter, HTTPException
-from v1.models.acr import ACRCopyRequest, ACRCopyResponse, ACRAuthRequest, ACRAuthResponse
-from v1.controllers.acr import copy_acr_image_with_credentials, list_acr_repositories_and_images
+from v1.models.acr import ACRCopyRequest, ACRCopyResponse, ACRListRequest, ACRListResponse
+from v1.controllers.acr import list_acr_repositories, copy_acr_image
 
 router = APIRouter(prefix="/acr", tags=["ACR"])
 
-@router.post("/copy", response_model=ACRCopyResponse)
-def copy_acr_image_with_credentials_endpoint(request: ACRCopyRequest):
+
+@router.post("/list", response_model=ACRListResponse)
+def list_repositories(request: ACRListRequest):
     """
-    API endpoint to copy a Docker image from one Azure Container Registry (ACR) to another using different credentials.
+    List repositories and their tags in an Azure Container Registry.
     """
     try:
-        return copy_acr_image_with_credentials(
-            source_registry_url=request.source_registry_url,
-            source_repository=request.source_repository,
-            source_image_tag=request.source_image_tag,
-            source_client_id=request.source_client_id,
-            source_client_secret=request.source_client_secret,
-            source_tenant_id=request.source_tenant_id,
-            destination_registry_url=request.destination_registry_url,
-            destination_repository=request.destination_repository,
-            destination_client_id=request.destination_client_id,
-            destination_client_secret=request.destination_client_secret,
-            destination_tenant_id=request.destination_tenant_id,
+        repositories = list_acr_repositories(
+            subscription_id=request.subscription_id,
+            registry_name=request.registry_name,
         )
+        return {
+            "registry_name": request.registry_name,
+            "repositories": repositories,
+            "total_repositories": len(repositories),
+        }
     except HTTPException as e:
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/list", response_model=ACRAuthResponse)
-def list_acr_repositories_and_images_endpoint(request: ACRAuthRequest):
+
+@router.post("/copy", response_model=ACRCopyResponse)
+def copy_image(request: ACRCopyRequest):
     """
-    API endpoint to list repositories and images in an Azure Container Registry (ACR)
-    using either a repository-scoped token or Azure Active Directory credentials.
+    Copy an image from one Azure Container Registry to another.
     """
     try:
-        return list_acr_repositories_and_images(
-            registry_url=request.registry_url,
-            token_username=request.token_username,
-            token_password=request.token_password,
-            client_id=request.client_id,
-            client_secret=request.client_secret,
-            tenant_id=request.tenant_id,
+        return copy_acr_image(
+            subscription_id=request.subscription_id,
+            source_registry=request.source_registry,
+            source_repository=request.source_repository,
+            source_image_tag=request.source_image_tag,
+            destination_registry=request.destination_registry,
+            destination_repository=request.destination_repository,
         )
     except HTTPException as e:
         raise e

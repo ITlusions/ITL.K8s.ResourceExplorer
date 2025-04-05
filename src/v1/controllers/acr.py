@@ -1,6 +1,7 @@
-from azure.identity import ClientSecretCredential
+from azure.identity import ClientSecretCredential, DeviceCodeCredential
 from azure.containerregistry import ContainerRegistryClient
 from fastapi import HTTPException
+from typing import List, Dict
 
 def authenticate_to_acr(client_id: str, client_secret: str, tenant_id: str):
     try:
@@ -16,6 +17,18 @@ def authenticate_to_acr(client_id: str, client_secret: str, tenant_id: str):
         return credential
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Authentication failed: {str(e)}")
+
+def authenticate_to_azure(subscription_id: str):
+    """
+    Authenticate to Azure using Device Code flow.
+    """
+    try:
+        print("Authenticating to Azure using Device Code...")
+        credential = DeviceCodeCredential()
+        print("Successfully authenticated to Azure.")
+        return credential
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Azure authentication failed: {str(e)}")
 
 def list_acr_repositories_and_images(
     registry_url: str,
@@ -73,6 +86,28 @@ def list_acr_repositories_and_images(
         return {"registry_url": registry_url, "repositories": repo_images}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch repositories/images: {str(e)}")
+
+def list_acr_repositories(subscription_id: str, registry_name: str) -> Dict[str, List[str]]:
+    """
+    List repositories and their tags in an Azure Container Registry.
+    """
+    try:
+        # Authenticate to Azure
+        credential = authenticate_to_azure(subscription_id)
+
+        # Initialize the Container Registry client
+        registry_url = f"https://{registry_name}.azurecr.io"
+        acr_client = ContainerRegistryClient(endpoint=registry_url, credential=credential)
+
+        # Fetch repositories and their tags
+        repositories = {}
+        for repo_name in acr_client.list_repository_names():
+            tags = [tag.name for tag in acr_client.list_tag_properties(repository_name=repo_name)]
+            repositories[repo_name] = tags
+
+        return repositories
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to list repositories: {str(e)}")
 
 def copy_acr_image_with_credentials(
     source_registry_url: str,
@@ -144,6 +179,56 @@ def copy_acr_image_with_credentials(
                 "repository": destination_repository,
                 "image_tag": source_image_tag,
             },
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to copy image: {str(e)}")
+
+def copy_acr_image(
+    subscription_id: str,
+    source_registry: str,
+    source_repository: str,
+    source_image_tag: str,
+    destination_registry: str,
+    destination_repository: str,
+) -> Dict:
+    """
+    Copy an image from one Azure Container Registry to another.
+    """
+    try:
+        # Authenticate to Azure
+        credential = authenticate_to_azure(subscription_id)
+
+        # Initialize the Container Registry clients
+        source_registry_url = f"https://{source_registry}.azurecr.io"
+        destination_registry_url = f"https://{destination_registry}.azurecr.io"
+        source_client = ContainerRegistryClient(endpoint=source_registry_url, credential=credential)
+        destination_client = ContainerRegistryClient(endpoint=destination_registry_url, credential=credential)
+
+        # Pull the image from the source registry
+        manifest = source_client.get_manifest_properties(repository_name=source_repository, tag=source_image_tag)
+
+        # Import the image to the destination registry
+        destination_client.import_image(
+            source=source_registry_url,
+            source_repository=source_repository,
+            source_tag=source_image_tag,
+            repository_name=destination_repository,
+            tag=source_image_tag,
+        )
+
+        return {
+            "source": {
+                "registry_url": source_registry_url,
+                "repository": source_repository,
+                "image_tag": source_image_tag,
+            },
+            "destination": {
+                "registry_url": destination_registry_url,
+                "repository": destination_repository,
+                "image_tag": source_image_tag,
+            },
+            "status": "success",
+            "message": "Image copied successfully",
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to copy image: {str(e)}")
