@@ -52,33 +52,51 @@ def get_crd_items(group: str, version: str, plural: str, namespace: str = None):
     
 def create_dynamic_crd_functions():
     """
-    Dynamically create functions for each CRD to list and get items.
+    Dynamically create functions for each CRD to list and get items,
+    separating namespaced and non-namespaced CRDs.
     """
     try:
         # Fetch all CRDs
-        crds = list_crds()
+        crds = api_extension_client.list_custom_resource_definition()
 
         # Dictionary to store dynamically created functions
         crd_functions = {}
 
-        for crd in crds:
-            group = crd["group"]
-            version = crd["version"]
-            plural = crd["name"]
+        for crd in crds.items:
+            group = crd.spec.group
+            version = crd.spec.versions[0].name
+            plural = crd.spec.names.plural
+            namespaced = crd.spec.scope == "Namespaced"
 
-            # Create a function to list items for the CRD
-            def list_items(namespace: str, group=group, version=version, plural=plural):
-                return get_crd_items(group=group, version=version, plural=plural, namespace=namespace)
+            if namespaced:
+                # Create a function to list items for the namespaced CRD
+                def list_items(namespace: str, group=group, version=version, plural=plural):
+                    return get_crd_items(group=group, version=version, plural=plural, namespace=namespace)
 
-            # Create a function to get a specific item for the CRD
-            def get_item(namespace: str, name: str, group=group, version=version, plural=plural):
-                return get_crd_items(group=group, version=version, plural=plural, namespace=namespace).get(name)
+                # Create a function to get a specific item for the namespaced CRD
+                def get_item(namespace: str, name: str, group=group, version=version, plural=plural):
+                    items = get_crd_items(group=group, version=version, plural=plural, namespace=namespace)
+                    return next((item for item in items.get("items", []) if item["metadata"]["name"] == name), None)
 
-            # Add the functions to the dictionary
-            crd_functions[f"list_{plural}"] = list_items
-            crd_functions[f"get_{plural}"] = get_item
+                # Add the functions to the dictionary
+                crd_functions[f"list_{plural}"] = list_items
+                crd_functions[f"get_{plural}"] = get_item
+
+            else:
+                # Create a function to list items for the cluster-scoped CRD
+                def list_items(group=group, version=version, plural=plural):
+                    return get_crd_items(group=group, version=version, plural=plural)
+
+                # Create a function to get a specific item for the cluster-scoped CRD
+                def get_item(name: str, group=group, version=version, plural=plural):
+                    items = get_crd_items(group=group, version=version, plural=plural)
+                    return next((item for item in items.get("items", []) if item["metadata"]["name"] == name), None)
+
+                # Add the functions to the dictionary
+                crd_functions[f"list_{plural}"] = list_items
+                crd_functions[f"get_{plural}"] = get_item
 
         return crd_functions
 
-    except HTTPException as e:
-        raise e
+    except ApiException as e:
+        raise HTTPException(status_code=500, detail=f"Error creating dynamic CRD functions: {str(e)}")

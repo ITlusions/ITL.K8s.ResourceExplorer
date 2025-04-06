@@ -30,18 +30,40 @@ def get_items_from_crd(request: CRDItemRequest):
 # Dynamically create and add CRD routes
 for function_name, function in controller_create_dynamic_crd_functions().items():
     if function_name.startswith("list_"):
-        router.add_api_route(
-            f"/{function_name[5:]}/{{namespace}}",
-            function,
-            methods=["GET"],
-            name=f"List {function_name[5:]}",
-            response_model=dict
-        )
+        if "namespace" in function.__code__.co_varnames:
+            # Namespaced CRD
+            router.add_api_route(
+                f"/{function_name[5:]}/{{namespace}}",
+                function,
+                methods=["GET"],
+                name=f"List {function_name[5:]}",
+                response_model=dict,
+            )
+        else:
+            # Non-namespaced CRD
+            router.add_api_route(
+                f"/{function_name[5:]}",
+                function,
+                methods=["GET"],
+                name=f"List {function_name[5:]}",
+                response_model=dict,
+            )
     elif function_name.startswith("get_"):
-        router.add_api_route(
-            f"/{function_name[4:]}/{{namespace}}/{{name}}",
-            function,
-            methods=["GET"],
-            name=f"Get {function_name[4:]}",
-            response_model=dict
-        )
+        if "namespace" in function.__code__.co_varnames:
+            # Namespaced CRD
+            router.add_api_route(
+                f"/{function_name[4:]}/{{namespace}}/{{name}}",
+                function,
+                methods=["GET"],
+                name=f"Get {function_name[4:]}",
+                response_model=dict,
+            )
+        else:
+            # Non-namespaced CRD
+            router.add_api_route(
+                f"/{function_name[4:]}/{{name}}",
+                function,
+                methods=["GET"],
+                name=f"Get {function_name[4:]}",
+                response_model=dict,
+            )
