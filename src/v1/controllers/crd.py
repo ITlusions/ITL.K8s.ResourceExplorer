@@ -31,7 +31,7 @@ def get_crd_items(group: str, version: str, plural: str, namespace: str = None):
         namespace (str, optional): The namespace to query (if the CRD is namespaced).
 
     Returns:
-        list: A list of items from the specified CRD with sensitive information masked.
+        dict: A dictionary of items from the specified CRD with sensitive information masked.
     """
     try:
         if namespace:

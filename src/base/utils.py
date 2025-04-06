@@ -17,7 +17,7 @@ def mask_secrets(value: Dict[str, Any]) -> Dict[str, Any]:
     if isinstance(value, dict):
         for key in value:
             # Check if the key contains sensitive keywords
-            if any(sensitive in key.lower() for sensitive in ["secret", "token", "password", "tls", "auth"]):
+            if any(sensitive in key.lower() for sensitive in ["secret", "token", "password", "tls", "auth", "PrivateKey"]):
                 value[key] = "***REDACTED***"
             elif isinstance(value[key], dict):
                 # Recursively mask nested dictionaries
