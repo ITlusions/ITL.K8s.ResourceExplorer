@@ -5,6 +5,7 @@ from v1.controllers.crd import (
     create_dynamic_crd_functions as controller_create_dynamic_crd_functions
 )
 from v1.models.models import CRDItemRequest
+from pydantic import BaseModel, create_model
 
 router = APIRouter(prefix="/crds", tags=["K8s Resources"])
 
@@ -28,7 +29,20 @@ def get_items_from_crd(request: CRDItemRequest):
     )
 
 # Dynamically create and add CRD routes
+# Dynamically create and add CRD routes
 for function_name, function in controller_create_dynamic_crd_functions().items():
+    # Dynamically create strict models for each CRD
+    crd_model_name = f"{function_name.capitalize()}Model"
+    crd_model = create_model(
+        crd_model_name,
+        **{
+            var: (str, ...)
+            for var in function.__code__.co_varnames
+            if var not in ("self", "cls")
+        },
+        __base__=BaseModel,
+    )
+
     if function_name.startswith("list_"):
         if "namespace" in function.__code__.co_varnames:
             # Namespaced CRD
@@ -37,7 +51,7 @@ for function_name, function in controller_create_dynamic_crd_functions().items()
                 function,
                 methods=["GET"],
                 name=f"List {function_name[5:]}",
-                response_model=dict,
+                response_model=crd_model,
             )
         else:
             # Non-namespaced CRD
@@ -46,7 +60,7 @@ for function_name, function in controller_create_dynamic_crd_functions().items()
                 function,
                 methods=["GET"],
                 name=f"List {function_name[5:]}",
-                response_model=dict,
+                response_model=crd_model,
             )
     elif function_name.startswith("get_"):
         if "namespace" in function.__code__.co_varnames:
@@ -56,7 +70,7 @@ for function_name, function in controller_create_dynamic_crd_functions().items()
                 function,
                 methods=["GET"],
                 name=f"Get {function_name[4:]}",
-                response_model=dict,
+                response_model=crd_model,
             )
         else:
             # Non-namespaced CRD
@@ -65,5 +79,5 @@ for function_name, function in controller_create_dynamic_crd_functions().items()
                 function,
                 methods=["GET"],
                 name=f"Get {function_name[4:]}",
-                response_model=dict,
+                response_model=crd_model,
             )
