@@ -6,6 +6,7 @@ from v1.controllers.crd import (
 )
 from v1.models.models import CRDItemRequest
 from pydantic import BaseModel, create_model
+from typing import List, Optional, Dict, Any
 
 router = APIRouter(prefix="/crds", tags=["K8s Resources"])
 
@@ -29,17 +30,18 @@ def get_items_from_crd(request: CRDItemRequest):
     )
 
 # Dynamically create and add CRD routes
-# Dynamically create and add CRD routes
 for function_name, function in controller_create_dynamic_crd_functions().items():
-    # Dynamically create strict models for each CRD
+    # Dynamically create a generic model for each CRD
     crd_model_name = f"{function_name.capitalize()}Model"
     crd_model = create_model(
         crd_model_name,
-        **{
-            var: (str, ...)
-            for var in function.__code__.co_varnames
-            if var not in ("self", "cls")
-        },
+        apiVersion=(Optional[str], None),
+        kind=(Optional[str], None),
+        metadata=(Optional[Dict[str, Any]], None),
+        items=(Optional[List[Dict[str, Any]]], None),
+        group=(Optional[str], None),
+        version=(Optional[str], None),
+        plural=(Optional[str], None),
         __base__=BaseModel,
     )
 
