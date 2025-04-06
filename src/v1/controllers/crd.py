@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from kubernetes import client
 from kubernetes.client.exceptions import ApiException
 from base.k8s_config import load_k8s_config
+from base.utils import mask_secrets
 
 # Load Kubernetes Configurations
 load_k8s_config()
@@ -30,7 +31,7 @@ def get_crd_items(group: str, version: str, plural: str, namespace: str = None):
         namespace (str, optional): The namespace to query (if the CRD is namespaced).
 
     Returns:
-        list: A list of items from the specified CRD.
+        list: A list of items from the specified CRD with sensitive information masked.
     """
     try:
         if namespace:
@@ -46,7 +47,8 @@ def get_crd_items(group: str, version: str, plural: str, namespace: str = None):
                 version=version,
                 plural=plural,
             )
-        return items
+        # Mask sensitive information
+        return mask_secrets(items)
     except ApiException as e:
         raise HTTPException(status_code=500, detail=f"Error fetching CRD items: {str(e)}")
     
@@ -71,12 +73,14 @@ def create_dynamic_crd_functions():
             if namespaced:
                 # Create a function to list items for the namespaced CRD
                 def list_items(namespace: str, group=group, version=version, plural=plural):
-                    return get_crd_items(group=group, version=version, plural=plural, namespace=namespace)
+                    items = get_crd_items(group=group, version=version, plural=plural, namespace=namespace)
+                    return mask_secrets(items)
 
                 # Create a function to get a specific item for the namespaced CRD
                 def get_item(namespace: str, name: str, group=group, version=version, plural=plural):
                     items = get_crd_items(group=group, version=version, plural=plural, namespace=namespace)
-                    return next((item for item in items.get("items", []) if item["metadata"]["name"] == name), None)
+                    item = next((item for item in items.get("items", []) if item["metadata"]["name"] == name), None)
+                    return mask_secrets(item)
 
                 # Add the functions to the dictionary
                 crd_functions[f"list_{plural}"] = list_items
@@ -85,12 +89,14 @@ def create_dynamic_crd_functions():
             else:
                 # Create a function to list items for the cluster-scoped CRD
                 def list_items(group=group, version=version, plural=plural):
-                    return get_crd_items(group=group, version=version, plural=plural)
+                    items = get_crd_items(group=group, version=version, plural=plural)
+                    return mask_secrets(items)
 
                 # Create a function to get a specific item for the cluster-scoped CRD
                 def get_item(name: str, group=group, version=version, plural=plural):
                     items = get_crd_items(group=group, version=version, plural=plural)
-                    return next((item for item in items.get("items", []) if item["metadata"]["name"] == name), None)
+                    item = next((item for item in items.get("items", []) if item["metadata"]["name"] == name), None)
+                    return mask_secrets(item)
 
                 # Add the functions to the dictionary
                 crd_functions[f"list_{plural}"] = list_items

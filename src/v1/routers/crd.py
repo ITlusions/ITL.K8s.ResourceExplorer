@@ -33,7 +33,7 @@ for function_name, function in controller_create_dynamic_crd_functions().items()
         if "namespace" in function.__code__.co_varnames:
             # Namespaced CRD
             router.add_api_route(
-                f"/{function_name[5:]}/{{namespace}} - Namespaced",
+                f"/{function_name[5:]}/{{namespace}}",
                 function,
                 methods=["GET"],
                 name=f"List {function_name[5:]}",
@@ -45,7 +45,7 @@ for function_name, function in controller_create_dynamic_crd_functions().items()
                 f"/{function_name[5:]}",
                 function,
                 methods=["GET"],
-                name=f"List {function_name[5:]} - Non-namespaced",
+                name=f"List {function_name[5:]}",
                 response_model=dict,
             )
     elif function_name.startswith("get_"):
@@ -55,13 +55,13 @@ for function_name, function in controller_create_dynamic_crd_functions().items()
                 f"/{function_name[4:]}/{{namespace}}/{{name}}",
                 function,
                 methods=["GET"],
-                name=f"Get {function_name[4:]} - Namespaced",
+                name=f"Get {function_name[4:]}",
                 response_model=dict,
             )
         else:
             # Non-namespaced CRD
             router.add_api_route(
-                f"/{function_name[4:]}/{{name}} - Non-namespaced",
+                f"/{function_name[4:]}/{{name}}",
                 function,
                 methods=["GET"],
                 name=f"Get {function_name[4:]}",
