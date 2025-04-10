@@ -127,7 +127,7 @@ async def stream_kubernetes_events():
     finally:
         w.stop()
 
-def list_ingresses(namespace: str) -> list:
+async def list_ingresses(namespace: str) -> list:
     """
     Retrieves a list of Ingresses in the specified namespace.
 
