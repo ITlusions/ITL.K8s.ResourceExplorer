@@ -3,8 +3,8 @@ from fastapi import FastAPI
 from base.routers import router as base_router
 from base.k8s_config import load_k8s_config
 from v1.routers import (
+    k8s as v1_k8s_resources_router,
     resources as v1_resources_router,
-    describe as v1_k8s_resources_router,
     s3 as v1_s3_router,
     connection as v1_connection_router,
     crd as v1_crd_router,
