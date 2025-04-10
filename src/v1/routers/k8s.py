@@ -2,11 +2,13 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse,StreamingResponse
 from kubernetes.client.exceptions import ApiException
 from v1.models.models import ResourceDetail, NotFoundResponse
-from v1.controllers.resourceexplorer.describe import (
+from v1.controllers.k8s import (
     get_all_resource_types as controller_get_all_resource_types,
     describe_resource as controller_describe_resource,
     list_resources_grouped_by_namespace as controller_list_resources_grouped_by_namespace,
-    stream_kubernetes_events as controller_stream_kubernetes_events  
+    stream_kubernetes_events as controller_stream_kubernetes_events,
+    list_ingresses as controller_list_ingresses,
+    list_nodes as controller_list_nodes,
 )
 
 k8s_resources_router = APIRouter(prefix="/k8s", tags=["K8s Resources"])
@@ -47,9 +49,12 @@ async def list_resources_by_namespace(namespace: str):
     """
     API endpoint to list all Kubernetes resources in a specific namespace.
     """
-    # Filter resources by the given namespace
-    #all_resources = await controller_list_resources_grouped_by_namespace()
-    return {"message": "Not implemented yet"}
+    try:
+        all_resources = await controller_list_resources_grouped_by_namespace()
+        namespace_resources = all_resources.get(namespace, {})
+        return {"namespace": namespace, "resources": namespace_resources}
+    except ApiException as e:
+        raise HTTPException(status_code=e.status, detail=e.reason)
 
 @k8s_resources_router.get("/{namespace}/ingresses", response_model=dict)
 async def list_ingresses(namespace: str):
@@ -57,9 +62,8 @@ async def list_ingresses(namespace: str):
     API endpoint to list all Ingresses in a specific namespace.
     """
     try:
-        # ingresses = await controller_list_ingresses(namespace)
-        # return {"namespace": namespace, "ingresses": ingresses}
-        return {"message": "Not implemented yet"}
+        ingresses = await controller_list_ingresses(namespace)
+        return {"namespace": namespace, "ingresses": ingresses}
     except ApiException as e:
         raise HTTPException(status_code=e.status, detail=e.reason)
 
@@ -143,9 +147,8 @@ async def list_nodes():
     API endpoint to list all Nodes in the Kubernetes cluster, including their status and resource usage.
     """
     try:
-        # nodes = await controller_list_nodes()
-        # return {"nodes": nodes}
-        return {"message": "Not implemented yet"}
+        nodes = await controller_list_nodes()
+        return {"nodes": nodes}
     except ApiException as e:
         raise HTTPException(status_code=e.status, detail=e.reason)
 
@@ -157,18 +160,6 @@ async def get_node_details(node_name: str):
     try:
         # node_details = await controller_get_node_details(node_name)
         # return {"node_name": node_name, "details": node_details}
-        return {"message": "Not implemented yet"}
-    except ApiException as e:
-        raise HTTPException(status_code=e.status, detail=e.reason)
-
-@k8s_resources_router.get("/nodes/names", response_model=list)
-async def list_node_names():
-    """
-    API endpoint to list all Node names in the Kubernetes cluster.
-    """
-    try:
-        # node_names = await controller_list_node_names()
-        # return node_names
         return {"message": "Not implemented yet"}
     except ApiException as e:
         raise HTTPException(status_code=e.status, detail=e.reason)

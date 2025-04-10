@@ -9,6 +9,7 @@ load_k8s_config()
 core_v1_api = client.CoreV1Api()
 apps_v1_api = client.AppsV1Api()
 apis_api = client.ApisApi()
+networking_v1_api = client.NetworkingV1Api()
 
 def get_all_resource_types():
     """
@@ -103,7 +104,6 @@ def list_resources_grouped_by_namespace():
 
     except ApiException as e:
         raise HTTPException(status_code=500, detail=f"Error fetching resources: {str(e)}")
-    
 
 async def stream_kubernetes_events():
     """
@@ -126,3 +126,70 @@ async def stream_kubernetes_events():
         yield f"data: Error: {str(e)}\n\n"
     finally:
         w.stop()
+
+def controller_list_ingresses(namespace: str) -> list:
+    """
+    Retrieves a list of Ingresses in the specified namespace.
+
+    Args:
+        namespace (str): The namespace to query for Ingresses.
+
+    Returns:
+        list: A list of Ingress objects in the specified namespace.
+    """
+    try:
+        # List Ingresses in the specified namespace
+        ingresses = networking_v1_api.list_namespaced_ingress(namespace=namespace)
+
+        # Extract relevant information from the Ingress objects
+        ingress_list = [
+            {
+                "name": ingress.metadata.name,
+                "namespace": ingress.metadata.namespace,
+                "host": ingress.spec.rules[0].host if ingress.spec.rules else None,
+                "paths": [
+                    path.path for path in ingress.spec.rules[0].http.paths
+                ] if ingress.spec.rules and ingress.spec.rules[0].http else [],
+                "creation_timestamp": ingress.metadata.creation_timestamp,
+            }
+            for ingress in ingresses.items
+        ]
+
+        return ingress_list
+
+    except ApiException as e:
+        raise ApiException(f"Error retrieving Ingresses in namespace '{namespace}': {e.reason}")
+
+def controller_list_nodes() -> list:
+    """
+    Retrieves a list of all Nodes in the Kubernetes cluster, including their status and resource usage.
+
+    Returns:
+        list: A list of Node objects with relevant details.
+    """
+    try:
+
+        # List all nodes in the cluster
+        nodes = core_v1_api.list_node()
+
+        # Extract relevant information from the Node objects
+        node_list = [
+            {
+                "name": node.metadata.name,
+                "status": "Ready" if any(
+                    condition.type == "Ready" and condition.status == "True"
+                    for condition in node.status.conditions
+                ) else "NotReady",
+                "capacity": node.status.capacity,
+                "allocatable": node.status.allocatable,
+                "labels": node.metadata.labels,
+                "creation_timestamp": node.metadata.creation_timestamp,
+            }
+            for node in nodes.items
+        ]
+
+        return node_list
+
+    except ApiException as e:
+        raise HTTPException(status_code=e.status, detail=f"Error retrieving nodes: {e.reason}")
+
