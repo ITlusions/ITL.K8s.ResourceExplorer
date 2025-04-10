@@ -127,7 +127,7 @@ async def stream_kubernetes_events():
     finally:
         w.stop()
 
-def controller_list_ingresses(namespace: str) -> list:
+def list_ingresses(namespace: str) -> list:
     """
     Retrieves a list of Ingresses in the specified namespace.
 
@@ -160,7 +160,7 @@ def controller_list_ingresses(namespace: str) -> list:
     except ApiException as e:
         raise ApiException(f"Error retrieving Ingresses in namespace '{namespace}': {e.reason}")
 
-def controller_list_nodes() -> list:
+def list_nodes() -> list:
     """
     Retrieves a list of all Nodes in the Kubernetes cluster, including their status and resource usage.
 
