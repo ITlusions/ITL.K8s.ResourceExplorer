@@ -1,9 +1,5 @@
 from fastapi import APIRouter
-from v1.controllers.crd import (
-    list_crds as controller_list_crds, 
-    get_crd_items as controller_get_crd_items,
-    create_dynamic_crd_functions as controller_create_dynamic_crd_functions
-)
+from v1.controllers.crd import CRDManager
 from v1.models.models import CRDItemRequest
 from pydantic import BaseModel, create_model
 from typing import List, Optional, Dict, Any
@@ -15,14 +11,14 @@ def list_crds():
     """
     API endpoint to list all Custom Resource Definitions (CRDs).
     """
-    return controller_list_crds()
+    return CRDManager.list_crds
 
 @router.post("/items")
 def get_items_from_crd(request: CRDItemRequest):
     """
     API endpoint to get items from a specific CRD.
     """
-    return controller_get_crd_items(
+    return CRDManager.get_crd_items(
         group=request.group,
         version=request.version,
         plural=request.plural,
@@ -30,7 +26,7 @@ def get_items_from_crd(request: CRDItemRequest):
     )
 
 # Dynamically create and add CRD routes
-for group_name, function in controller_create_dynamic_crd_functions().items():
+for group_name, function in CRDManager.create_dynamic_crd_functions().items():
     # Dynamically create a generic model for each CRD
     crd_model_name = f"{group_name.capitalize()}Model"
     crd_model = create_model(
