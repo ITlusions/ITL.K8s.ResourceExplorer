@@ -115,7 +115,7 @@ async def stream_kubernetes_events():
     try:
         # Watch events in the cluster
         loop = asyncio.get_event_loop()
-        for event in await loop.run_in_executor(None, lambda: w.stream(core_v1_api.list_event_for_all_namespaces, timeout_seconds=0)):
+        for event in await loop.run_in_executor(None, lambda: w.stream(core_v1_api.list_event_for_all_namespaces, timeout_seconds=5)):
             # Format the event as a Server-Sent Event (SSE)
             event_type = event.get("type", "UNKNOWN")
             event_object = event.get("object", {})
@@ -160,7 +160,7 @@ async def list_ingresses(namespace: str) -> list:
     except ApiException as e:
         raise ApiException(f"Error retrieving Ingresses in namespace '{namespace}': {e.reason}")
 
-def list_nodes() -> list:
+async def list_nodes() -> list:
     """
     Retrieves a list of all Nodes in the Kubernetes cluster, including their status and resource usage.
 
