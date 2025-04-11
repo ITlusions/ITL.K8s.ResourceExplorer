@@ -11,14 +11,17 @@ def list_crds():
     """
     API endpoint to list all Custom Resource Definitions (CRDs).
     """
-    return CRDManager.list_crds()
+    crd_manager = CRDManager()
+    return crd_manager.list_crds()
 
 @router.post("/items")
 def get_items_from_crd(request: CRDItemRequest):
     """
     API endpoint to get items from a specific CRD.
     """
-    return CRDManager.get_crd_items(
+    crd_manager = CRDManager()
+
+    return crd_manager.get_crd_items(
         group=request.group,
         version=request.version,
         plural=request.plural,
