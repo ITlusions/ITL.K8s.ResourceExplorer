@@ -45,41 +45,43 @@ for group_name, function in controller_create_dynamic_crd_functions().items():
         __base__=BaseModel,
     )
 
+    plural = function.__annotations__.get("plural", group_name[5:] if group_name.startswith("list_") else group_name[4:])
+
     if group_name.startswith("list_"):
         if "namespace" in function.__code__.co_varnames:
             # Namespaced CRD
             router.add_api_route(
-                f"/{group_name[5:]}/{{namespace}}",
+                f"/{plural}/{{namespace}}",
                 function,
                 methods=["GET"],
-                name=f"List {group_name[5:]}",
+                name=f"List {plural}",
                 response_model=crd_model,
             )
         else:
             # Non-namespaced CRD
             router.add_api_route(
-                f"/{group_name[5:]}",
+                f"/{plural}",
                 function,
                 methods=["GET"],
-                name=f"List {group_name[5:]}",
+                name=f"List {plural}",
                 response_model=crd_model,
             )
     elif group_name.startswith("get_"):
         if "namespace" in function.__code__.co_varnames:
             # Namespaced CRD
             router.add_api_route(
-                f"/{group_name[4:]}/{{namespace}}/{{name}}",
+                f"/{plural}/{{namespace}}/{{name}}",
                 function,
                 methods=["GET"],
-                name=f"Get {group_name[4:]}",
+                name=f"Get {plural}",
                 response_model=crd_model,
             )
         else:
             # Non-namespaced CRD
             router.add_api_route(
-                f"/{group_name[4:]}/{{name}}",
+                f"/{plural}/{{name}}",
                 function,
                 methods=["GET"],
-                name=f"Get {group_name[4:]}",
+                name=f"Get {plural}",
                 response_model=crd_model,
             )
