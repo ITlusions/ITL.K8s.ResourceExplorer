@@ -11,7 +11,7 @@ def list_crds():
     """
     API endpoint to list all Custom Resource Definitions (CRDs).
     """
-    return CRDManager.list_crds
+    return CRDManager.list_crds()
 
 @router.post("/items")
 def get_items_from_crd(request: CRDItemRequest):
@@ -26,7 +26,8 @@ def get_items_from_crd(request: CRDItemRequest):
     )
 
 # Dynamically create and add CRD routes
-for group_name, function in CRDManager.create_dynamic_crd_functions().items():
+crd_manager = CRDManager()
+for group_name, function in crd_manager.create_dynamic_crd_functions().items():
     # Dynamically create a generic model for each CRD
     crd_model_name = f"{group_name.capitalize()}Model"
     crd_model = create_model(
