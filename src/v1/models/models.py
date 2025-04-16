@@ -116,3 +116,10 @@ class KubernetesEvent(BaseModel):
     message: str = Field(..., description="The message associated with the event.")
     reason: Optional[str] = Field(None, description="The reason for the event.")
     timestamp: Optional[datetime] = Field(None, description="The timestamp of the event.")
+
+
+class StorageClass(BaseModel):
+    name: str
+    provisioner: str
+    reclaim_policy: Optional[str]
+    volume_binding_mode: Optional[str]

@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from kubernetes import client, watch
+from kubernetes import client, watch, config
 from kubernetes.client.exceptions import ApiException
 from base.k8s_config import load_k8s_config
 import asyncio
@@ -192,4 +192,27 @@ async def list_nodes() -> list:
 
     except ApiException as e:
         raise HTTPException(status_code=e.status, detail=f"Error retrieving nodes: {e.reason}")
+
+async def controller_list_storage_classes():
+    """
+    Controller to list all StorageClasses in the Kubernetes cluster.
+    """
+    try:
+        # Load Kubernetes configuration
+        config.load_kube_config()
+        v1_storage_api = client.StorageV1Api()
+
+        # Fetch all storage classes
+        storage_classes = v1_storage_api.list_storage_class()
+        return [
+            {
+                "name": sc.metadata.name,
+                "provisioner": sc.provisioner,
+                "reclaim_policy": sc.reclaim_policy,
+                "volume_binding_mode": sc.volume_binding_mode,
+            }
+            for sc in storage_classes.items
+        ]
+    except client.exceptions.ApiException as e:
+        raise ApiException(status=e.status, reason=e.reason)
 

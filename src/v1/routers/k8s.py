@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse,StreamingResponse
 from kubernetes.client.exceptions import ApiException
-from v1.models.models import ResourceDetail, NotFoundResponse
+from v1.models.models import ResourceDetail, NotFoundResponse, StorageClass
 from v1.controllers.k8s import (
     get_all_resource_types as controller_get_all_resource_types,
     describe_resource as controller_describe_resource,
@@ -174,5 +174,16 @@ async def stream_events():
     # except HTTPException as e:
     #     raise e
         return {"message": "Not implemented yet"}
+    except ApiException as e:
+        raise HTTPException(status_code=e.status, detail=e.reason)
+
+@k8s_resources_router.get("/storageclasses", response_model=list[StorageClass])
+async def list_storage_classes():
+    """
+    API endpoint to list all StorageClasses in the Kubernetes cluster.
+    """
+    try:
+        storage_classes = await list_storage_classes()
+        return {"storage_classes": storage_classes}
     except ApiException as e:
         raise HTTPException(status_code=e.status, detail=e.reason)
