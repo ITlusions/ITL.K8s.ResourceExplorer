@@ -178,13 +178,13 @@ async def stream_events():
     except ApiException as e:
         raise HTTPException(status_code=e.status, detail=e.reason)
 
-@k8s_resources_router.get("/storageclasses", response_model=list[dict])
+@k8s_resources_router.get("/storageclasses", response_model=list[StorageClass])
 async def list_storage_classes():
     """
     API endpoint to list all StorageClasses in the Kubernetes cluster.
     """
     try:
-        storage_classes = await controller_list_storage_classes()
-        return {"storage_classes": storage_classes}
+        # Call the controller to fetch storage classes
+        return await controller_list_storage_classes()
     except ApiException as e:
         raise HTTPException(status_code=e.status, detail=e.reason)
