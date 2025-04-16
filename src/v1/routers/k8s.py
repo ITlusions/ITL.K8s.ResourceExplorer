@@ -9,6 +9,7 @@ from v1.controllers.k8s import (
     stream_kubernetes_events as controller_stream_kubernetes_events,
     list_ingresses as controller_list_ingresses,
     list_nodes as controller_list_nodes,
+    controller_list_storage_classes  # Ensure the correct import
 )
 
 k8s_resources_router = APIRouter(prefix="/k8s", tags=["K8s Resources"])
@@ -177,13 +178,13 @@ async def stream_events():
     except ApiException as e:
         raise HTTPException(status_code=e.status, detail=e.reason)
 
-@k8s_resources_router.get("/storageclasses", response_model=list[StorageClass])
+@k8s_resources_router.get("/storageclasses", response_model=list[dict])
 async def list_storage_classes():
     """
     API endpoint to list all StorageClasses in the Kubernetes cluster.
     """
     try:
-        storage_classes = await list_storage_classes()
+        storage_classes = await controller_list_storage_classes()
         return {"storage_classes": storage_classes}
     except ApiException as e:
         raise HTTPException(status_code=e.status, detail=e.reason)
