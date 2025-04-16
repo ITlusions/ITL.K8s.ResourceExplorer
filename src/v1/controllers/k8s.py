@@ -10,6 +10,7 @@ core_v1_api = client.CoreV1Api()
 apps_v1_api = client.AppsV1Api()
 apis_api = client.ApisApi()
 networking_v1_api = client.NetworkingV1Api()
+storage_v1_api = client.StorageV1Api()
 
 def get_all_resource_types():
     """
@@ -198,12 +199,8 @@ async def controller_list_storage_classes():
     Controller to list all StorageClasses in the Kubernetes cluster.
     """
     try:
-        # Load Kubernetes configuration
-        config.load_kube_config()
-        v1_storage_api = client.StorageV1Api()
-
         # Fetch all storage classes
-        storage_classes = v1_storage_api.list_storage_class()
+        storage_classes = storage_v1_api.list_storage_class()
         return [
             {
                 "name": sc.metadata.name,
