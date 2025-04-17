@@ -1,5 +1,5 @@
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import JSONResponse,StreamingResponse
+from fastapi import APIRouter, HTTPException, WebSocket, Query, Depends
+from fastapi.responses import JSONResponse, StreamingResponse
 from kubernetes.client.exceptions import ApiException
 from v1.models.models import ResourceDetail, NotFoundResponse, StorageClass
 from v1.controllers.k8s import (
@@ -9,8 +9,10 @@ from v1.controllers.k8s import (
     stream_kubernetes_events as controller_stream_kubernetes_events,
     list_ingresses as controller_list_ingresses,
     list_nodes as controller_list_nodes,
-    controller_list_storage_classes  # Ensure the correct import
+    controller_list_storage_classes,  # Ensure the correct import
+    interactive_exec
 )
+from utils.auth import validate_token
 
 k8s_resources_router = APIRouter(prefix="/k8s", tags=["K8s Resources"])
 
@@ -188,3 +190,24 @@ async def list_storage_classes():
         return await controller_list_storage_classes()
     except ApiException as e:
         raise HTTPException(status_code=e.status, detail=e.reason)
+
+@k8s_resources_router.websocket("/ws/exec")
+async def exec_websocket(
+    websocket: WebSocket,
+    namespace: str = Query(...),
+    pod_name: str = Query(...),
+    container_name: str = Query(...),
+    user_info: dict = Depends(validate_token),  # Inject user info from the dependency
+):
+    """
+    WebSocket endpoint to interactively connect to a Kubernetes container.
+    Authentication is performed using Entra ID tokens.
+    """
+    # Accept the WebSocket connection after successful authentication
+    await websocket.accept()
+
+    # Log the authenticated user's information (optional)
+    print(f"Authenticated user: {user_info.get('preferred_username')}")
+
+    # Call the interactive_exec function to handle the Kubernetes interaction
+    await interactive_exec(websocket, namespace, pod_name, container_name)
