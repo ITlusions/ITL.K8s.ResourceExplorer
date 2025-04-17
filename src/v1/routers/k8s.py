@@ -16,9 +16,7 @@ from utils.auth import validate_token
 
 k8s_resources_router = APIRouter(
     prefix="/k8s",
-    tags=["K8s Resources"],
-    description="This router includes Kubernetes resource management endpoints. "
-                "Note: The WebSocket endpoint `/ws/exec` is not visible in the API docs but is functional.",
+    tags=["K8s Resources"]
 )
 
 @k8s_resources_router.get("/resourcetypes", response_model=dict)
