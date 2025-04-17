@@ -14,7 +14,12 @@ from v1.controllers.k8s import (
 )
 from utils.auth import validate_token
 
-k8s_resources_router = APIRouter(prefix="/k8s", tags=["K8s Resources"])
+k8s_resources_router = APIRouter(
+    prefix="/k8s",
+    tags=["K8s Resources"],
+    description="This router includes Kubernetes resource management endpoints. "
+                "Note: The WebSocket endpoint `/ws/exec` is not visible in the API docs but is functional.",
+)
 
 @k8s_resources_router.get("/resourcetypes", response_model=dict)
 async def list_resource_types():
@@ -211,3 +216,19 @@ async def exec_websocket(
 
     # Call the interactive_exec function to handle the Kubernetes interaction
     await interactive_exec(websocket, namespace, pod_name, container_name)
+
+@k8s_resources_router.get("/ws/exec-docs", response_model=dict)
+def websocket_docs():
+    """
+    Documentation for the WebSocket endpoint to interactively connect to a Kubernetes container.
+    """
+    return {
+        "description": "WebSocket endpoint to interactively connect to a Kubernetes container.",
+        "url": "/k8s/ws/exec",
+        "parameters": {
+            "namespace": "The namespace of the pod.",
+            "pod_name": "The name of the pod.",
+            "container_name": "The name of the container.",
+        },
+        "authentication": "Requires a Bearer token in the Authorization header.",
+    }
