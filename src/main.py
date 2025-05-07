@@ -1,5 +1,6 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
+from base.auth import validate_api_key
 from base.routers import router as base_router
 from base.k8s_config import load_k8s_config
 from v1.routers import (
@@ -15,12 +16,17 @@ from v1.routers import (
 
 # Load Kubernetes configuration
 load_k8s_config()
+print("Kubernetes configuration loaded successfully.")
+
+namespace = os.getenv("NAMESPACE", open("/var/run/secrets/kubernetes.io/serviceaccount/namespace").read().strip())
+print(f"Namespace: {namespace}")
 
 # Fetch dynamic configuration from environment variables
 root_path = os.getenv("ROOT_PATH", "/resource-explorer")
 openapi_url = os.getenv("OPENAPI_URL", f"{root_path}/openapi.json")
 
 # Initialize FastAPI apps
+print("FastAPI applications initialized.")
 app = FastAPI(root_path=root_path, openapi_url=openapi_url)
 app_v1 = FastAPI(openapi_url=f"{root_path}/v1/openapi.json")
 
@@ -38,12 +44,15 @@ v1_routers = [
 ]
 
 for router, tag in v1_routers:
-    app_v1.include_router(router, tags=[tag])
+    app_v1.include_router(router, tags=[tag], dependencies=[Depends(validate_api_key)])
+print("FastAPI routers included successfully.")
 
 # Mount versioned app
 app.mount("/v1", app_v1)
+print("FastAPI application mounted successfully.")
 
 # Run the application
 if __name__ == "__main__":
     import uvicorn
+    print("FastAPI application is ready to run.")
     uvicorn.run("main:app", port=8000, reload=True)
