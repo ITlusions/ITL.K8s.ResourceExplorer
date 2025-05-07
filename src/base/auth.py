@@ -45,7 +45,8 @@ try:
 except Exception:
     # If secrets or environment variables are not available, generate a random GUID
     API_KEY = str(uuid.uuid4())
-    print(f"No secrets or environment variables found. Generated API Key: {API_KEY}")
+    print(f"No secrets or environment variables found.")
+    print(f"Use a predefined API-Key only use this locally for testing purpose. Generated API Key: {API_KEY}")
 
 def validate_api_key(api_key: str = Depends(api_key_header)):
     """
