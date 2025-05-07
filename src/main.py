@@ -48,11 +48,10 @@ for router, tag in v1_routers:
 print("FastAPI routers included successfully.")
 
 # Mount versioned app
-app.mount("/v1", app_v1)
+app.mount(app_v1)
 print("FastAPI application mounted successfully.")
-
+print("FastAPI application is ready to run.")
 # Run the application
 if __name__ == "__main__":
     import uvicorn
-    print("FastAPI application is ready to run.")
     uvicorn.run("main:app", port=8000, reload=True)
