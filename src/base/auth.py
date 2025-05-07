@@ -1,4 +1,5 @@
 import os
+import uuid
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security.api_key import APIKeyHeader
 from kubernetes import client, config
@@ -41,8 +42,10 @@ try:
 
     # Retrieve the API key from the Kubernetes secret
     API_KEY = get_api_key_from_k8s_secret(SECRET_NAME, NAMESPACE, SECRET_KEY)
-except Exception as e:
-    raise RuntimeError(f"Failed to initialize API key: {e}") from e
+except Exception:
+    # If secrets or environment variables are not available, generate a random GUID
+    API_KEY = str(uuid.uuid4())
+    print(f"No secrets or environment variables found. Generated API Key: {API_KEY}")
 
 def validate_api_key(api_key: str = Depends(api_key_header)):
     """
