@@ -48,7 +48,7 @@ for router, tag in v1_routers:
 print("FastAPI routers included successfully.")
 
 # Mount versioned app
-app.mount(app_v1)
+app.mount("", app_v1)
 print("FastAPI application mounted successfully.")
 print("FastAPI application is ready to run.")
 # Run the application
