@@ -1,5 +1,5 @@
-from fastapi import HTTPException
-from kubernetes import client, watch, config
+from fastapi import HTTPException, WebSocket
+from kubernetes import client, watch, config, stream
 from kubernetes.client.exceptions import ApiException
 from base.k8s_config import load_k8s_config
 import asyncio
@@ -212,4 +212,50 @@ async def controller_list_storage_classes():
         ]
     except client.exceptions.ApiException as e:
         raise ApiException(status=e.status, reason=e.reason)
+
+async def interactive_exec(websocket: WebSocket, namespace: str, pod_name: str, container_name: str):
+    """
+    Controller to handle interactive WebSocket streaming to a Kubernetes container.
+    """
+    try:
+
+        # Define the command to start a shell
+        exec_command = ["/bin/sh"]
+
+        # Open a WebSocket stream to the Kubernetes API
+        resp = stream.stream(
+            core_v1_api.connect_get_namespaced_pod_exec,
+            pod_name,
+            namespace,
+            container=container_name,
+            command=exec_command,
+            stderr=True,
+            stdin=True,
+            stdout=True,
+            tty=True,
+            _preload_content=False,  # Disable automatic content processing
+        )
+
+        # Accept the WebSocket connection
+        await websocket.accept()
+
+        # Read and write data between the client and the Kubernetes pod
+        while resp.is_open():
+            # Read data from the Kubernetes stream
+            if resp.peek_stdout():
+                output = resp.read_stdout()
+                await websocket.send_text(output)
+
+            if resp.peek_stderr():
+                error = resp.read_stderr()
+                await websocket.send_text(error)
+
+            # Read data from the WebSocket client
+            data = await websocket.receive_text()
+            resp.write_stdin(data)
+
+        resp.close()
+    except Exception as e:
+        await websocket.close()
+        raise HTTPException(status_code=500, detail=str(e))
 

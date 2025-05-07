@@ -123,3 +123,9 @@ class StorageClass(BaseModel):
     provisioner: str
     reclaim_policy: Optional[str]
     volume_binding_mode: Optional[str]
+
+
+class ExecRequest(BaseModel):
+    namespace: str
+    pod_name: str
+    container_name: str
