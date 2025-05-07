@@ -48,8 +48,19 @@ for router, tag in v1_routers:
 print("FastAPI routers included successfully.")
 
 # Mount versioned app
-app.mount("", app_v1)
+app.mount("/v1", app_v1)
 print("FastAPI application mounted successfully.")
+
+# Output app_v1 settings
+print("app_v1 settings:")
+print(f"Title: {app_v1.title}")
+print(f"Version: {app_v1.version}")
+print(f"OpenAPI URL: {app_v1.openapi_url}")
+print(f"Root Path: {app_v1.root_path}")
+print(f"Docs URL: {app_v1.docs_url}")
+print(f"Redoc URL: {app_v1.redoc_url}")
+
+
 print("FastAPI application is ready to run.")
 # Run the application
 if __name__ == "__main__":
