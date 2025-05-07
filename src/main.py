@@ -28,7 +28,7 @@ openapi_url = os.getenv("OPENAPI_URL", f"{root_path}/openapi.json")
 # Initialize FastAPI apps
 print("FastAPI applications initialized.")
 app = FastAPI(root_path=root_path, openapi_url=openapi_url)
-app_v1 = FastAPI(root_path=f"{root_path}/v1",openapi_url=f"{root_path}/v1/openapi.json")
+app_v1 = FastAPI(root_path=f"{root_path}/v1",openapi_url=f"{root_path}/openapi.json")
 
 # Include routers
 app.include_router(base_router, tags=["Health"])
