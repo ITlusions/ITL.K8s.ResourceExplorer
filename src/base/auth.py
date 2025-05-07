@@ -1,7 +1,9 @@
 import os
-from fastapi import HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security.api_key import APIKeyHeader
-from kubernetes import client, config, exceptions
+from kubernetes import client, config
+
+app = FastAPI()
 
 API_KEY_NAME = "X-API-Key"
 api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=True)
@@ -24,7 +26,7 @@ def get_api_key_from_k8s_secret(secret_name: str, namespace: str, key: str) -> s
         
         # Decode the base64-encoded secret value
         return secret.data[key].encode("utf-8").decode("utf-8")
-    except exceptions.ApiException as e:
+    except client.ApiException as e:
         raise RuntimeError(f"Failed to retrieve Kubernetes secret '{secret_name}': {e.reason}")
     except KeyError as e:
         raise RuntimeError(str(e))
@@ -40,7 +42,7 @@ try:
     # Retrieve the API key from the Kubernetes secret
     API_KEY = get_api_key_from_k8s_secret(SECRET_NAME, NAMESPACE, SECRET_KEY)
 except Exception as e:
-    raise RuntimeError(f"Failed to initialize API key: {e}")
+    raise RuntimeError(f"Failed to initialize API key: {e}") from e
 
 def validate_api_key(api_key: str = Depends(api_key_header)):
     """
