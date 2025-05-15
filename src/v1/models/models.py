@@ -77,3 +77,8 @@ class KubernetesEvent(BaseModel):
     message: str
     reason: Optional[str]
     timestamp: Optional[str]
+
+class DeleteDeploymentRequest(BaseModel):
+    namespace: str
+    deployment_name: str
+
