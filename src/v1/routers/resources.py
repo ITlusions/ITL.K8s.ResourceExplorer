@@ -5,7 +5,7 @@ from v1.controllers.resourceexplorer.controller import (
     get_all_secrets as controller_get_secrets,
     delete_deployment as controller_delete_deployment
 )
-from models.models import DeleteDeploymentRequest
+from v1.models.models import DeleteDeploymentRequest
 
 router = APIRouter()
 
