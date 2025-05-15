@@ -2,83 +2,111 @@ from fastapi import HTTPException
 from kubernetes import client
 from kubernetes.client.exceptions import ApiException
 from base.k8s_config import load_k8s_config
+from base.utils import mask_secrets
 
-# Load Kubernetes Configurations
-load_k8s_config()
+class CRDManager:
+    def __init__(self):
+        """
+        Initialize the CRDManager by loading Kubernetes configurations
+        and setting up API clients.
+        """
+        load_k8s_config()
+        self.api_extension_client = client.ApiextensionsV1Api()
+        self.custom_objects_api = client.CustomObjectsApi()
 
-api_extension_client = client.ApiextensionsV1Api()
-custom_objects_api = client.CustomObjectsApi()
+    def list_crds(self):
+        """
+        List all Custom Resource Definitions (CRDs) in the cluster.
+        """
+        try:
+            crds = self.api_extension_client.list_custom_resource_definition()
+            return [{"name": crd.metadata.name, "group": crd.spec.group, "version": crd.spec.versions[0].name} for crd in crds.items]
+        except ApiException as e:
+            raise HTTPException(status_code=500, detail=f"Error fetching CRDs: {str(e)}")
 
-def list_crds():
-    """
-    List all Custom Resource Definitions (CRDs) in the cluster.
-    """
-    try:
-        crds = api_extension_client.list_custom_resource_definition()
-        return [{"name": crd.metadata.name, "group": crd.spec.group, "version": crd.spec.versions[0].name} for crd in crds.items]
-    except ApiException as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching CRDs: {str(e)}")
+    def get_crd_items(self, group: str, version: str, plural: str, namespace: str = None):
+        """
+        Get items from a specific CRD.
 
-def get_crd_items(group: str, version: str, plural: str, namespace: str = None):
-    """
-    Get items from a specific CRD.
+        Args:
+            group (str): The API group of the CRD.
+            version (str): The version of the CRD.
+            plural (str): The plural name of the CRD (e.g., "customresources").
+            namespace (str, optional): The namespace to query (if the CRD is namespaced).
 
-    Args:
-        group (str): The API group of the CRD.
-        version (str): The version of the CRD.
-        plural (str): The plural name of the CRD (e.g., "customresources").
-        namespace (str, optional): The namespace to query (if the CRD is namespaced).
+        Returns:
+            dict: A dictionary of items from the specified CRD with sensitive information masked.
+        """
+        try:
+            if namespace:
+                items = self.custom_objects_api.list_namespaced_custom_object(
+                    group=group,
+                    version=version,
+                    namespace=namespace,
+                    plural=plural,
+                )
+            else:
+                items = self.custom_objects_api.list_cluster_custom_object(
+                    group=group,
+                    version=version,
+                    plural=plural,
+                )
+            # Mask sensitive information
+            return mask_secrets(items)
+        except ApiException as e:
+            raise HTTPException(status_code=500, detail=f"Error fetching CRD items: {str(e)}")
 
-    Returns:
-        list: A list of items from the specified CRD.
-    """
-    try:
-        if namespace:
-            items = custom_objects_api.list_namespaced_custom_object(
-                group=group,
-                version=version,
-                namespace=namespace,
-                plural=plural,
-            )
-        else:
-            items = custom_objects_api.list_cluster_custom_object(
-                group=group,
-                version=version,
-                plural=plural,
-            )
-        return items
-    except ApiException as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching CRD items: {str(e)}")
-    
-def create_dynamic_crd_functions():
-    """
-    Dynamically create functions for each CRD to list and get items.
-    """
-    try:
-        # Fetch all CRDs
-        crds = list_crds()
+    def create_dynamic_crd_functions(self):
+        """
+        Dynamically create functions for each CRD to list and get items,
+        separating namespaced and non-namespaced CRDs.
+        """
+        try:
+            # Fetch all CRDs
+            crds = self.api_extension_client.list_custom_resource_definition()
 
-        # Dictionary to store dynamically created functions
-        crd_functions = {}
+            # Dictionary to store dynamically created functions
+            crd_functions = {}
 
-        for crd in crds:
-            group = crd["group"]
-            version = crd["version"]
-            plural = crd["name"]
+            for crd in crds.items:
+                group = crd.spec.group
+                version = crd.spec.versions[0].name
+                plural = crd.spec.names.plural
+                namespaced = crd.spec.scope == "Namespaced"
 
-            # Create a function to list items for the CRD
-            def list_items(namespace: str, group=group, version=version, plural=plural):
-                return get_crd_items(group=group, version=version, plural=plural, namespace=namespace)
+                if namespaced:
+                    # Create a function to list items for the namespaced CRD
+                    def list_items(namespace: str, group=group, version=version, plural=plural):
+                        items = self.get_crd_items(group=group, version=version, plural=plural, namespace=namespace)
+                        return mask_secrets(items)
 
-            # Create a function to get a specific item for the CRD
-            def get_item(namespace: str, name: str, group=group, version=version, plural=plural):
-                return get_crd_items(group=group, version=version, plural=plural, namespace=namespace).get(name)
+                    # Create a function to get a specific item for the namespaced CRD
+                    def get_item(namespace: str, name: str, group=group, version=version, plural=plural):
+                        items = self.get_crd_items(group=group, version=version, plural=plural, namespace=namespace)
+                        item = next((item for item in items.get("items", []) if item["metadata"]["name"] == name), None)
+                        return mask_secrets(item)
 
-            # Add the functions to the dictionary
-            crd_functions[f"list_{plural}"] = list_items
-            crd_functions[f"get_{plural}"] = get_item
+                    # Add the functions to the dictionary
+                    crd_functions[f"list_{plural}"] = list_items
+                    crd_functions[f"get_{plural}"] = get_item
 
-        return crd_functions
+                else:
+                    # Create a function to list items for the cluster-scoped CRD
+                    def list_items(group=group, version=version, plural=plural):
+                        items = self.get_crd_items(group=group, version=version, plural=plural)
+                        return mask_secrets(items)
 
-    except HTTPException as e:
-        raise e
+                    # Create a function to get a specific item for the cluster-scoped CRD
+                    def get_item(name: str, group=group, version=version, plural=plural):
+                        items = self.get_crd_items(group=group, version=version, plural=plural)
+                        item = next((item for item in items.get("items", []) if item["metadata"]["name"] == name), None)
+                        return mask_secrets(item)
+
+                    # Add the functions to the dictionary
+                    crd_functions[f"list_{plural}"] = list_items
+                    crd_functions[f"get_{plural}"] = get_item
+
+            return crd_functions
+
+        except ApiException as e:
+            raise HTTPException(status_code=500, detail=f"Error creating dynamic CRD functions: {str(e)}")

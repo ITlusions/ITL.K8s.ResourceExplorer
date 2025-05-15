@@ -1,5 +1,5 @@
-from fastapi import HTTPException
-from kubernetes import client, watch
+from fastapi import HTTPException, WebSocket
+from kubernetes import client, watch, config, stream
 from kubernetes.client.exceptions import ApiException
 from base.k8s_config import load_k8s_config
 import asyncio
@@ -9,6 +9,8 @@ load_k8s_config()
 core_v1_api = client.CoreV1Api()
 apps_v1_api = client.AppsV1Api()
 apis_api = client.ApisApi()
+networking_v1_api = client.NetworkingV1Api()
+storage_v1_api = client.StorageV1Api()
 
 def get_all_resource_types():
     """
@@ -103,7 +105,6 @@ def list_resources_grouped_by_namespace():
 
     except ApiException as e:
         raise HTTPException(status_code=500, detail=f"Error fetching resources: {str(e)}")
-    
 
 async def stream_kubernetes_events():
     """
@@ -115,7 +116,7 @@ async def stream_kubernetes_events():
     try:
         # Watch events in the cluster
         loop = asyncio.get_event_loop()
-        for event in await loop.run_in_executor(None, lambda: w.stream(core_v1_api.list_event_for_all_namespaces, timeout_seconds=0)):
+        for event in await loop.run_in_executor(None, lambda: w.stream(core_v1_api.list_event_for_all_namespaces, timeout_seconds=5)):
             # Format the event as a Server-Sent Event (SSE)
             event_type = event.get("type", "UNKNOWN")
             event_object = event.get("object", {})
@@ -126,3 +127,135 @@ async def stream_kubernetes_events():
         yield f"data: Error: {str(e)}\n\n"
     finally:
         w.stop()
+
+async def list_ingresses(namespace: str) -> list:
+    """
+    Retrieves a list of Ingresses in the specified namespace.
+
+    Args:
+        namespace (str): The namespace to query for Ingresses.
+
+    Returns:
+        list: A list of Ingress objects in the specified namespace.
+    """
+    try:
+        # List Ingresses in the specified namespace
+        ingresses = networking_v1_api.list_namespaced_ingress(namespace=namespace)
+
+        # Extract relevant information from the Ingress objects
+        ingress_list = [
+            {
+                "name": ingress.metadata.name,
+                "namespace": ingress.metadata.namespace,
+                "host": ingress.spec.rules[0].host if ingress.spec.rules else None,
+                "paths": [
+                    path.path for path in ingress.spec.rules[0].http.paths
+                ] if ingress.spec.rules and ingress.spec.rules[0].http else [],
+                "creation_timestamp": ingress.metadata.creation_timestamp,
+            }
+            for ingress in ingresses.items
+        ]
+
+        return ingress_list
+
+    except ApiException as e:
+        raise ApiException(f"Error retrieving Ingresses in namespace '{namespace}': {e.reason}")
+
+async def list_nodes() -> list:
+    """
+    Retrieves a list of all Nodes in the Kubernetes cluster, including their status and resource usage.
+
+    Returns:
+        list: A list of Node objects with relevant details.
+    """
+    try:
+
+        # List all nodes in the cluster
+        nodes = core_v1_api.list_node()
+
+        # Extract relevant information from the Node objects
+        node_list = [
+            {
+                "name": node.metadata.name,
+                "status": "Ready" if any(
+                    condition.type == "Ready" and condition.status == "True"
+                    for condition in node.status.conditions
+                ) else "NotReady",
+                "capacity": node.status.capacity,
+                "allocatable": node.status.allocatable,
+                "labels": node.metadata.labels,
+                "creation_timestamp": node.metadata.creation_timestamp,
+            }
+            for node in nodes.items
+        ]
+
+        return node_list
+
+    except ApiException as e:
+        raise HTTPException(status_code=e.status, detail=f"Error retrieving nodes: {e.reason}")
+
+async def controller_list_storage_classes():
+    """
+    Controller to list all StorageClasses in the Kubernetes cluster.
+    """
+    try:
+        # Fetch all storage classes
+        storage_classes = storage_v1_api.list_storage_class()
+        return [
+            {
+                "name": sc.metadata.name,
+                "provisioner": sc.provisioner,
+                "reclaim_policy": sc.reclaim_policy,
+                "volume_binding_mode": sc.volume_binding_mode,
+            }
+            for sc in storage_classes.items
+        ]
+    except client.exceptions.ApiException as e:
+        raise ApiException(status=e.status, reason=e.reason)
+
+async def interactive_exec(websocket: WebSocket, namespace: str, pod_name: str, container_name: str):
+    """
+    Controller to handle interactive WebSocket streaming to a Kubernetes container.
+    """
+    try:
+
+        # Define the command to start a shell
+        exec_command = ["/bin/sh"]
+
+        # Open a WebSocket stream to the Kubernetes API
+        resp = stream.stream(
+            core_v1_api.connect_get_namespaced_pod_exec,
+            pod_name,
+            namespace,
+            container=container_name,
+            command=exec_command,
+            stderr=True,
+            stdin=True,
+            stdout=True,
+            tty=True,
+            _preload_content=False,  # Disable automatic content processing
+        )
+
+        # Accept the WebSocket connection
+        await websocket.accept()
+
+        # Read and write data between the client and the Kubernetes pod
+        while resp.is_open():
+            # Read data from the Kubernetes stream
+            if resp.peek_stdout():
+                output = resp.read_stdout()
+                await websocket.send_text(output)
+
+            if resp.peek_stderr():
+                error = resp.read_stderr()
+                await websocket.send_text(error)
+
+            # Read data from the WebSocket client
+            data = await websocket.receive_text()
+            resp.write_stdin(data)
+
+        resp.close()
+    except Exception as e:
+        await websocket.close()
+        raise HTTPException(status_code=500, detail=str(e))
+

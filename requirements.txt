@@ -10,3 +10,8 @@ pytest-asyncio
 coverage
 httpx
 setuptools
+azure-identity 
+azure-containerregistry
+msal
+python-jose
+websockets
