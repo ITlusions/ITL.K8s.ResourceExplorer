@@ -120,12 +120,17 @@ class KubernetesEvent(BaseModel):
 
 class StorageClass(BaseModel):
     name: str
-    provisioner: str
-    reclaim_policy: Optional[str]
-    volume_binding_mode: Optional[str]
+    namespace: Optional[str]
+    message: str
+    reason: Optional[str]
+    timestamp: Optional[str]
 
-
-class ExecRequest(BaseModel):
+class DeleteDeploymentRequest(BaseModel):
     namespace: str
-    pod_name: str
-    container_name: str
+    deployment_name: str
+
+class DeleteResourceRequest(BaseModel):
+    namespace: str = Field(..., description="The namespace of the resource.")
+    resource_name: str = Field(..., description="The name of the resource to delete.")
+    resource_type: str = Field(..., description="The type of the resource (e.g., deployment, statefulset, replicaset).")
+

@@ -66,3 +66,66 @@ def list_resources_grouped_by_namespace():
 
     except ApiException as e:
         raise HTTPException(status_code=500, detail=f"Error fetching resources: {str(e)}")
+
+def delete_deployment(namespace: str, deployment_name: str):
+    try:
+        # Load Kubernetes configuration
+        config.load_kube_config()
+
+        # Create an API client for deployments
+        apps_v1 = client.AppsV1Api()
+
+        # Delete the deployment
+        response = apps_v1.delete_namespaced_deployment(
+            name=deployment_name,
+            namespace=namespace,
+            body=client.V1DeleteOptions()
+        )
+        return {"message": f"Deployment '{deployment_name}' deleted successfully", "details": response.status}
+    except client.exceptions.ApiException as e:
+        raise HTTPException(status_code=e.status, detail=f"Failed to delete deployment: {e.reason}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+
+def delete_resource(namespace: str, resource_name: str, resource_type: str):
+    """
+    Delete a Kubernetes resource (Deployment, StatefulSet, ReplicaSet).
+
+    Args:
+        namespace (str): The namespace of the resource.
+        resource_name (str): The name of the resource to delete.
+        resource_type (str): The type of the resource (deployment, statefulset, replicaset).
+
+    Returns:
+        dict: A success message and details of the deletion.
+    """
+    try:
+        if resource_type.lower() == "deployment":
+            api_client = apps_v1_api
+            response = api_client.delete_namespaced_deployment(
+                name=resource_name,
+                namespace=namespace,
+                body=client.V1DeleteOptions()
+            )
+        elif resource_type.lower() == "statefulset":
+            api_client = apps_v1_api
+            response = api_client.delete_namespaced_stateful_set(
+                name=resource_name,
+                namespace=namespace,
+                body=client.V1DeleteOptions()
+            )
+        elif resource_type.lower() == "replicaset":
+            api_client = apps_v1_api
+            response = api_client.delete_namespaced_replica_set(
+                name=resource_name,
+                namespace=namespace,
+                body=client.V1DeleteOptions()
+            )
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported resource type: {resource_type}")
+
+        return {"message": f"{resource_type.capitalize()} '{resource_name}' deleted successfully", "details": response.status}
+    except client.exceptions.ApiException as e:
+        raise HTTPException(status_code=e.status, detail=f"Failed to delete {resource_type}: {e.reason}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")

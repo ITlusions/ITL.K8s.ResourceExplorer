@@ -1,0 +1,26 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: delete-resources-clusterrole
+rules:
+  - apiGroups: ["apps"] # API group for deployments, statefulsets, and replicasets
+    resources: 
+      - "deployments"
+      - "statefulsets"
+      - "replicasets"
+    verbs: 
+      - "delete"
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: delete-resources-clusterrolebinding
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "itl.common.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: delete-resources-clusterrole
+  apiGroup: rbac.authorization.k8s.io
