@@ -123,7 +123,7 @@ def delete_resource(namespace: str, resource_name: str, resource_type: str, forc
                 namespace=namespace if resource_type.lower() not in ["pv", "namespace"] else None,
                 body=delete_options
             )
-            return {"message": f"{resource_type.capitalize()} '{resource_name}' deleted successfully", "details": response.status}
+            return {"message": f"{resource_type.capitalize()} '{resource_name}' deleted successfully", "details": response.to_dict() if hasattr(response, 'to_dict') else str(response)}
         else:
             print(f"Unsupported resource type: {resource_type}")
             raise HTTPException(status_code=400, detail=f"Unsupported resource type: {resource_type}")
