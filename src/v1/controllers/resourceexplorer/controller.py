@@ -87,39 +87,61 @@ def delete_deployment(namespace: str, deployment_name: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
-def delete_resource(namespace: str, resource_name: str, resource_type: str):
+def delete_resource(namespace: str, resource_name: str, resource_type: str, force: bool = False):
     """
-    Delete a Kubernetes resource (Deployment, StatefulSet, ReplicaSet).
+    Delete a Kubernetes resource (Deployment, StatefulSet, ReplicaSet, Pod, PersistentVolume, PersistentVolumeClaim, Namespace).
 
     Args:
-        namespace (str): The namespace of the resource.
+        namespace (str): The namespace of the resource (not required for PersistentVolumes or Namespaces).
         resource_name (str): The name of the resource to delete.
-        resource_type (str): The type of the resource (deployment, statefulset, replicaset).
+        resource_type (str): The type of the resource (deployment, statefulset, replicaset, pod, pv, pvc, namespace).
+        force (bool): Whether to force delete the resource.
 
     Returns:
         dict: A success message and details of the deletion.
     """
     try:
+        delete_options = client.V1DeleteOptions(grace_period_seconds=0) if force else client.V1DeleteOptions()
+
         if resource_type.lower() == "deployment":
-            api_client = apps_v1_api
-            response = api_client.delete_namespaced_deployment(
+            response = apps_v1_api.delete_namespaced_deployment(
                 name=resource_name,
                 namespace=namespace,
-                body=client.V1DeleteOptions()
+                body=delete_options
             )
         elif resource_type.lower() == "statefulset":
-            api_client = apps_v1_api
-            response = api_client.delete_namespaced_stateful_set(
+            response = apps_v1_api.delete_namespaced_stateful_set(
                 name=resource_name,
                 namespace=namespace,
-                body=client.V1DeleteOptions()
+                body=delete_options
             )
         elif resource_type.lower() == "replicaset":
-            api_client = apps_v1_api
-            response = api_client.delete_namespaced_replica_set(
+            response = apps_v1_api.delete_namespaced_replica_set(
                 name=resource_name,
                 namespace=namespace,
-                body=client.V1DeleteOptions()
+                body=delete_options
+            )
+        elif resource_type.lower() == "pod":
+            response = core_v1_api.delete_namespaced_pod(
+                name=resource_name,
+                namespace=namespace,
+                body=delete_options
+            )
+        elif resource_type.lower() == "pvc":
+            response = core_v1_api.delete_namespaced_persistent_volume_claim(
+                name=resource_name,
+                namespace=namespace,
+                body=delete_options
+            )
+        elif resource_type.lower() == "pv":
+            response = core_v1_api.delete_persistent_volume(
+                name=resource_name,
+                body=delete_options
+            )
+        elif resource_type.lower() == "namespace":
+            response = core_v1_api.delete_namespace(
+                name=resource_name,
+                body=delete_options
             )
         else:
             raise HTTPException(status_code=400, detail=f"Unsupported resource type: {resource_type}")

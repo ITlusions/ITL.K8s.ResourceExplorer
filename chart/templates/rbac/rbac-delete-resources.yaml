@@ -10,6 +10,18 @@ rules:
       - "replicasets"
     verbs: 
       - "delete"
+  - apiGroups: [""] # Core API group for pods, persistentvolumeclaims, and namespaces
+    resources: 
+      - "pods"
+      - "persistentvolumeclaims"
+      - "namespaces"
+    verbs: 
+      - "delete"
+  - apiGroups: [""] # Core API group for persistentvolumes
+    resources: 
+      - "persistentvolumes"
+    verbs: 
+      - "delete"
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
