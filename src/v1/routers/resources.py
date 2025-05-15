@@ -40,7 +40,7 @@ async def delete_k8s_deployment(request: DeleteDeploymentRequest):
 @router.delete("/resources", tags=["Resources"])
 async def delete_k8s_resource(request: DeleteResourceRequest):
     """
-    Delete a Kubernetes resource (Deployment, StatefulSet, ReplicaSet).
+    Delete a Kubernetes resource (Deployment, StatefulSet, ReplicaSet, Pod, PersistentVolume, PersistentVolumeClaim, Namespace).
 
     Args:
         request (DeleteResourceRequest): The request body containing namespace, resource name, and resource type.
