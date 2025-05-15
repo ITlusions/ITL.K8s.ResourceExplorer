@@ -100,23 +100,22 @@ def delete_resource(namespace: str, resource_name: str, resource_type: str):
         dict: A success message and details of the deletion.
     """
     try:
-        config.load_kube_config()
         if resource_type.lower() == "deployment":
-            api_client = client.AppsV1Api()
+            api_client = apps_v1_api
             response = api_client.delete_namespaced_deployment(
                 name=resource_name,
                 namespace=namespace,
                 body=client.V1DeleteOptions()
             )
         elif resource_type.lower() == "statefulset":
-            api_client = client.AppsV1Api()
+            api_client = apps_v1_api
             response = api_client.delete_namespaced_stateful_set(
                 name=resource_name,
                 namespace=namespace,
                 body=client.V1DeleteOptions()
             )
         elif resource_type.lower() == "replicaset":
-            api_client = client.AppsV1Api()
+            api_client = apps_v1_api
             response = api_client.delete_namespaced_replica_set(
                 name=resource_name,
                 namespace=namespace,
