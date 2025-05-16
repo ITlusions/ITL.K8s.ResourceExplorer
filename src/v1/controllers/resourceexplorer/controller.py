@@ -101,53 +101,39 @@ def delete_resource(namespace: str, resource_name: str, resource_type: str, forc
         dict: A success message and details of the deletion.
     """
     try:
-        delete_options = client.V1DeleteOptions(grace_period_seconds=0) if force else client.V1DeleteOptions()
+        delete_options = client.V1DeleteOptions(
+            grace_period_seconds=0 if force else None,
+            propagation_policy="Foreground" if force else "Background"
+        )
 
-        if resource_type.lower() == "deployment":
-            response = apps_v1_api.delete_namespaced_deployment(
+        resource_deletion_map = {
+            "deployment": apps_v1_api.delete_namespaced_deployment,
+            "statefulset": apps_v1_api.delete_namespaced_stateful_set,
+            "replicaset": apps_v1_api.delete_namespaced_replica_set,
+            "pod": core_v1_api.delete_namespaced_pod,
+            "pvc": core_v1_api.delete_namespaced_persistent_volume_claim,
+            "pv": core_v1_api.delete_persistent_volume,
+            "namespace": core_v1_api.delete_namespace,
+        }
+
+        if resource_type.lower() in resource_deletion_map:
+            delete_func = resource_deletion_map[resource_type.lower()]
+            response = delete_func(
                 name=resource_name,
-                namespace=namespace,
+                namespace=namespace if resource_type.lower() not in ["pv", "namespace"] else None,
                 body=delete_options
             )
-        elif resource_type.lower() == "statefulset":
-            response = apps_v1_api.delete_namespaced_stateful_set(
-                name=resource_name,
-                namespace=namespace,
-                body=delete_options
-            )
-        elif resource_type.lower() == "replicaset":
-            response = apps_v1_api.delete_namespaced_replica_set(
-                name=resource_name,
-                namespace=namespace,
-                body=delete_options
-            )
-        elif resource_type.lower() == "pod":
-            response = core_v1_api.delete_namespaced_pod(
-                name=resource_name,
-                namespace=namespace,
-                body=delete_options
-            )
-        elif resource_type.lower() == "pvc":
-            response = core_v1_api.delete_namespaced_persistent_volume_claim(
-                name=resource_name,
-                namespace=namespace,
-                body=delete_options
-            )
-        elif resource_type.lower() == "pv":
-            response = core_v1_api.delete_persistent_volume(
-                name=resource_name,
-                body=delete_options
-            )
-        elif resource_type.lower() == "namespace":
-            response = core_v1_api.delete_namespace(
-                name=resource_name,
-                body=delete_options
-            )
+            return {"message": f"{resource_type.capitalize()} '{resource_name}' deleted successfully", "details": response.to_dict() if hasattr(response, 'to_dict') else str(response)}
         else:
+            print(f"Unsupported resource type: {resource_type}")
             raise HTTPException(status_code=400, detail=f"Unsupported resource type: {resource_type}")
 
-        return {"message": f"{resource_type.capitalize()} '{resource_name}' deleted successfully", "details": response.status}
     except client.exceptions.ApiException as e:
+        if e.status == 404:
+            raise HTTPException(status_code=404, detail=f"{resource_type.capitalize()} '{resource_name}' not found")
         raise HTTPException(status_code=e.status, detail=f"Failed to delete {resource_type}: {e.reason}")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"An unexpected error occurred while deleting {resource_type} '{resource_name}': {str(e)}"
+        )

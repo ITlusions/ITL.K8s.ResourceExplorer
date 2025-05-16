@@ -1,8 +1,8 @@
-import os
-from pydantic import BaseModel, field_validator, Field, root_validator, HttpUrl
-from typing import List, Dict, Any, Optional, Union
+from pydantic import BaseModel, field_validator, Field, HttpUrl
+from typing import List, Dict, Any, Optional
 from datetime import datetime
 from base.utils import mask_secrets
+from enum import Enum
 
 
 class ResourceMetadata(BaseModel):
@@ -104,10 +104,8 @@ class NamespaceResources(BaseModel):
             "deployments": len(self.deployments),
         }
 
-
 class NotFoundResponse(BaseModel):
     detail: str = Field(..., description="Details about the not found error.")
-
 
 class KubernetesEvent(BaseModel):
     type: str = Field(..., description="The type of the event.")
@@ -116,7 +114,6 @@ class KubernetesEvent(BaseModel):
     message: str = Field(..., description="The message associated with the event.")
     reason: Optional[str] = Field(None, description="The reason for the event.")
     timestamp: Optional[datetime] = Field(None, description="The timestamp of the event.")
-
 
 class StorageClass(BaseModel):
     name: str
@@ -129,8 +126,24 @@ class DeleteDeploymentRequest(BaseModel):
     namespace: str
     deployment_name: str
 
+class ResourceType(str, Enum):
+    DEPLOYMENT = "deployment"
+    STATEFULSET = "statefulset"
+    REPLICASET = "replicaset"
+    POD = "pod"
+    SERVICE = "service"
+    PERSISTENTVOLUME = "pv"
+    PERSISTENTVOLUMECLAIM = "pvc"
+    NAMESPACE = "namespace"
+
+    @classmethod
+    def get_resource_types(cls) -> List[str]:
+        """Returns a list of all resource types."""
+        return [resource_type.value for resource_type in cls]
+
+
 class DeleteResourceRequest(BaseModel):
     namespace: str = Field(..., description="The namespace of the resource.")
     resource_name: str = Field(..., description="The name of the resource to delete.")
-    resource_type: str = Field(..., description="The type of the resource (e.g., deployment, statefulset, replicaset).")
-
+    resource_type: ResourceType = Field(..., description="The type of the resource (e.g., deployment, statefulset, replicaset).")
+    force: bool = Field(False, description="Flag to indicate if the deletion should be forced.")

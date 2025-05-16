@@ -43,16 +43,17 @@ async def delete_k8s_resource(request: DeleteResourceRequest):
     Delete a Kubernetes resource (Deployment, StatefulSet, ReplicaSet, Pod, PersistentVolume, PersistentVolumeClaim, Namespace).
 
     Args:
-        request (DeleteResourceRequest): The request body containing namespace, resource name, and resource type.
+        request (DeleteResourceRequest): The request body containing namespace, resource name, resource type, and force flag.
 
     Returns:
         dict: A success message and details of the deletion.
     """
     try:
-        result = controller_delete_resource(request.namespace, request.resource_name, request.resource_type)
+        result = controller_delete_resource(
+            request.namespace, request.resource_name, request.resource_type, request.force
+        )
         return result
     except HTTPException as e:
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
