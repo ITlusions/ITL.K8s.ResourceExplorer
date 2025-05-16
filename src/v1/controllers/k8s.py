@@ -78,7 +78,7 @@ async def describe_resource(namespace: str, resource_type: str, resource_name: s
             raise HTTPException(status_code=404, detail=f"{resource_type.capitalize()} '{resource_name}' not found in namespace '{namespace}'")
         raise HTTPException(status_code=500, detail=f"Error fetching resource: {str(e)}")
 
-def list_resources_grouped_by_namespace():
+async def controller_list_resources_grouped_by_namespace():
     """
     Fetch all resources (pods, services, deployments) grouped by namespace.
     """
@@ -102,9 +102,10 @@ def list_resources_grouped_by_namespace():
             }
 
         return result
-
     except ApiException as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching resources: {str(e)}")
+        raise HTTPException(status_code=e.status, detail=f"Error fetching resources: {e.reason}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
 async def stream_kubernetes_events():
     """
