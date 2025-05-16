@@ -55,7 +55,7 @@ class AuthWrapper:
         except Exception as e:
             raise RuntimeError(f"An unexpected error occurred: {e}")
 
-    def validate_api_key(self, api_key: str = Depends(lambda: self.api_key_header)):
+    def validate_api_key(self, api_key: str = Depends()):
         """
         Validate the provided API key against the one retrieved from the Kubernetes secret.
         """
