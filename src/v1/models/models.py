@@ -147,3 +147,22 @@ class DeleteResourceRequest(BaseModel):
     resource_name: str = Field(..., description="The name of the resource to delete.")
     resource_type: ResourceType = Field(..., description="The type of the resource (e.g., deployment, statefulset, replicaset).")
     force: bool = Field(False, description="Flag to indicate if the deletion should be forced.")
+
+
+class PersistentVolumeClaim(BaseModel):
+    name: str
+    namespace: str
+    status: str
+    storage: Optional[str]
+    access_modes: Optional[list[str]]
+    storage_class: Optional[str]
+
+
+class PersistentVolume(BaseModel):
+    name: str
+    status: str
+    capacity: Optional[str]
+    access_modes: Optional[list[str]]
+    reclaim_policy: Optional[str]
+    storage_class: Optional[str]
+    volume_mode: Optional[str]

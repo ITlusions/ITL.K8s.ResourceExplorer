@@ -13,6 +13,9 @@ from v1.controllers.k8s import (
     interactive_exec
 )
 from utils.auth import validate_token
+from typing import Optional
+from v1.controllers.k8s import list_pvcs, list_pvs
+from v1.models.models import PersistentVolumeClaim, PersistentVolume
 
 k8s_resources_router = APIRouter(
     prefix="/k8s",
@@ -193,6 +196,28 @@ async def list_storage_classes():
         return await controller_list_storage_classes()
     except ApiException as e:
         raise HTTPException(status_code=e.status, detail=e.reason)
+
+@k8s_resources_router.get("/pvcs", response_model=list[PersistentVolumeClaim])
+async def get_pvcs(namespace: Optional[str] = None):
+    """
+    API endpoint to list PersistentVolumeClaims (PVCs) in the Kubernetes cluster.
+    If a namespace is provided, list PVCs only in that namespace.
+    """
+    try:
+        return await list_pvcs(namespace)
+    except HTTPException as e:
+        raise e
+
+@k8s_resources_router.get("/pvs", response_model=list[PersistentVolume])
+async def get_pvs(namespace: Optional[str] = None):
+    """
+    API endpoint to list PersistentVolumes (PVs) in the Kubernetes cluster.
+    If a namespace is provided, filter PVs by their claimRef namespace.
+    """
+    try:
+        return await list_pvs(namespace)
+    except HTTPException as e:
+        raise e
 
 @k8s_resources_router.websocket("/ws/exec")
 async def exec_websocket(

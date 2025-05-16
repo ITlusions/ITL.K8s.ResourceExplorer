@@ -260,3 +260,57 @@ async def interactive_exec(websocket: WebSocket, namespace: str, pod_name: str, 
         await websocket.close()
         raise HTTPException(status_code=500, detail=str(e))
 
+async def list_pvcs(namespace: Optional[str] = None) -> list[PersistentVolumeClaim]:
+    """
+    List PersistentVolumeClaims (PVCs) in the Kubernetes cluster.
+    If a namespace is provided, list PVCs only in that namespace.
+    """
+    try:
+        if namespace:
+            pvcs = core_v1_api.list_namespaced_persistent_volume_claim(namespace=namespace)
+        else:
+            pvcs = core_v1_api.list_persistent_volume_claim_for_all_namespaces()
+
+        return [
+            PersistentVolumeClaim(
+                name=pvc.metadata.name,
+                namespace=pvc.metadata.namespace,
+                status=pvc.status.phase,
+                storage=pvc.status.capacity.get("storage") if pvc.status.capacity else None,
+                access_modes=pvc.spec.access_modes,
+                storage_class=pvc.spec.storage_class_name,
+            )
+            for pvc in pvcs.items
+        ]
+    except ApiException as e:
+        raise HTTPException(status_code=e.status, detail=f"Error fetching PVCs: {e.reason}")
+
+async def list_pvs(namespace: Optional[str] = None) -> list[PersistentVolume]:
+    """
+    List PersistentVolumes (PVs) in the Kubernetes cluster.
+    If a namespace is provided, filter PVs by their claimRef namespace.
+    """
+    try:
+        pvs = core_v1_api.list_persistent_volume()
+
+        # Filter PVs by namespace if provided
+        filtered_pvs = [
+            pv for pv in pvs.items
+            if not namespace or (pv.spec.claim_ref and pv.spec.claim_ref.namespace == namespace)
+        ]
+
+        return [
+            PersistentVolume(
+                name=pv.metadata.name,
+                status=pv.status.phase,
+                capacity=pv.spec.capacity.get("storage") if pv.spec.capacity else None,
+                access_modes=pv.spec.access_modes,
+                reclaim_policy=pv.spec.persistent_volume_reclaim_policy,
+                storage_class=pv.spec.storage_class_name,
+                volume_mode=pv.spec.volume_mode,
+            )
+            for pv in filtered_pvs
+        ]
+    except ApiException as e:
+        raise HTTPException(status_code=e.status, detail=f"Error fetching PVs: {e.reason}")
+
