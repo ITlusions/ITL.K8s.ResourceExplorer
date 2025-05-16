@@ -29,7 +29,7 @@ auth_wrapper = AuthWrapper()
 
 # Initialize FastAPI apps
 print("FastAPI applications initialized.")
-app = FastAPI(root_path=root_path, openapi_url=openapi_url, dependencies=[Depends(auth_wrapper.validate_api_key)])
+app = FastAPI(root_path=root_path, openapi_url=openapi_url)
 app_v1 = FastAPI(root_path=f"{root_path}/v1", openapi_url=f"{root_path}/openapi.json", dependencies=[Depends(auth_wrapper.validate_api_key)])
 
 # Include routers
