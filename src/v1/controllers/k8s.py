@@ -2,8 +2,10 @@ from fastapi import HTTPException, WebSocket
 from kubernetes import client, watch, config, stream
 from kubernetes.client.exceptions import ApiException
 from base.k8s_config import load_k8s_config
+
 import asyncio
 from typing import Optional
+from v1.models.models import PersistentVolume, PersistentVolumeClaim
 
 # Load Kubernetes Configurations
 load_k8s_config()
