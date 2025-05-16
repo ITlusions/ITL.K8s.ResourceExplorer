@@ -25,7 +25,6 @@ print(f"Namespace: {namespace}")
 root_path = os.getenv("ROOT_PATH", "/resource-explorer")
 openapi_url = os.getenv("OPENAPI_URL", f"{root_path}/openapi.json")
 
-
 auth_wrapper = AuthWrapper()
 
 # Initialize FastAPI apps
