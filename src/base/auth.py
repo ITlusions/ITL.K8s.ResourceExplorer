@@ -4,11 +4,12 @@ import base64
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security.api_key import APIKeyHeader
 from kubernetes import client, config
+from base.helpers import KubernetesHelper
 import logging
 from typing import Optional
 
 class AuthWrapper:
-    def __init__(self, k8s_helper=None, enable_validation: bool = True):
+    def __init__(self, enable_validation: bool = True):
         """
         Initialize the AuthWrapper.
 
@@ -19,7 +20,7 @@ class AuthWrapper:
         self.app = FastAPI()
         self.API_KEY_NAME = "X-API-Key"
         self.api_key_header = APIKeyHeader(name=self.API_KEY_NAME, auto_error=True)
-        self.k8s_helper = k8s_helper or KubernetesHelper()
+        self.k8s_helper = KubernetesHelper()
         self.enable_validation = enable_validation
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
