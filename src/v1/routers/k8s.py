@@ -1,12 +1,11 @@
 from fastapi import APIRouter, HTTPException, WebSocket, Query, Depends
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse
 from kubernetes.client.exceptions import ApiException
 from v1.models.models import ResourceDetail, NotFoundResponse, StorageClass
 from v1.controllers.k8s import (
     get_all_resource_types as controller_get_all_resource_types,
     describe_resource as controller_describe_resource,
     list_resources_grouped_by_namespace as controller_list_resources_grouped_by_namespace,
-    stream_kubernetes_events as controller_stream_kubernetes_events,
     list_ingresses as controller_list_ingresses,
     list_nodes as controller_list_nodes,
     controller_list_storage_classes,  # Ensure the correct import
@@ -169,19 +168,6 @@ async def get_node_details(node_name: str):
     try:
         # node_details = await controller_get_node_details(node_name)
         # return {"node_name": node_name, "details": node_details}
-        return {"message": "Not implemented yet"}
-    except ApiException as e:
-        raise HTTPException(status_code=e.status, detail=e.reason)
-    
-@k8s_resources_router.get("/events", response_class=StreamingResponse)
-async def stream_events():
-    """
-    API endpoint to stream Kubernetes events in real-time.
-    """
-    try:
-    #     return StreamingResponse(controller_stream_kubernetes_events(), media_type="text/event-stream")
-    # except HTTPException as e:
-    #     raise e
         return {"message": "Not implemented yet"}
     except ApiException as e:
         raise HTTPException(status_code=e.status, detail=e.reason)

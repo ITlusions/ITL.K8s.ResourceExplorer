@@ -25,14 +25,14 @@ class ResourceDetail(BaseModel):
         return f"Resource {self.metadata.name} in {self.metadata.namespace} has status: {self.status}"
 
 
-class NamespaceResources(BaseModel):
-    """Represents resources grouped by namespace."""
-    namespace: str = Field(..., description="The namespace of the resources.")
-    resources: Dict[str, List[str]] = Field(..., description="Generalized structure for different resource types.")
+# class NamespaceResources(BaseModel):
+#     """Represents resources grouped by namespace."""
+#     namespace: str = Field(..., description="The namespace of the resources.")
+#     resources: Dict[str, List[str]] = Field(..., description="Generalized structure for different resource types.")
 
-    def get_resource_count(self) -> int:
-        """Returns the total count of resources in the namespace."""
-        return sum(len(resource_list) for resource_list in self.resources.values())
+#     def get_resource_count(self) -> int:
+#         """Returns the total count of resources in the namespace."""
+#         return sum(len(resource_list) for resource_list in self.resources.values())
 
 
 class S3Account(BaseModel):
