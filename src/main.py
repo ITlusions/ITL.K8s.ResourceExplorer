@@ -73,10 +73,10 @@ print(f"Redoc URL: {app_v1.redoc_url}")
 print("FastAPI application is ready to run.")
 
 # Configure logging
-        logging.basicConfig(
-            level=logging.INFO,  # Set the logging level to INFO
-            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",  # Log format
-        )
+logging.basicConfig(
+    level=logging.INFO,  # Set the logging level to INFO
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",  # Log format
+)
 
 # Run the application
 if __name__ == "__main__":
