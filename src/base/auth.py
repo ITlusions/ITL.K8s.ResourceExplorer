@@ -8,6 +8,8 @@ from base.helpers import KubernetesHelper
 import logging
 from typing import Optional
 
+
+
 class AuthWrapper:
     def __init__(self, enable_validation: bool = True):
         """
@@ -22,8 +24,8 @@ class AuthWrapper:
         self.api_key_header = APIKeyHeader(name=self.API_KEY_NAME, auto_error=True)
         self.k8s_helper = KubernetesHelper()
         self.enable_validation = enable_validation
+        
         self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.DEBUG)
 
         # Initialize API key
         self.API_KEY = self._initialize_api_key()

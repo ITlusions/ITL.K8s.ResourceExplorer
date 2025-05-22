@@ -1,4 +1,5 @@
 import os
+import logging
 from fastapi import FastAPI, Depends
 from base.auth import AuthWrapper
 from base.k8s_config import load_k8s_config
@@ -71,7 +72,13 @@ print(f"Redoc URL: {app_v1.redoc_url}")
 
 print("FastAPI application is ready to run.")
 
+# Configure logging
+        logging.basicConfig(
+            level=logging.INFO,  # Set the logging level to INFO
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",  # Log format
+        )
+
 # Run the application
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", port=8000, reload=True)
+    uvicorn.run("main:app", port=8000, reload=True, log_level="info")
