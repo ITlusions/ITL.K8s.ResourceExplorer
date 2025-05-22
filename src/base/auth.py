@@ -1,5 +1,6 @@
 import os
 import uuid
+import base64
 from base.helpers import KubernetesHelper
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security.api_key import APIKeyHeader
@@ -24,6 +25,8 @@ class AuthWrapper:
         self.API_KEY_NAME = "X-API-Key"
         self.api_key_header = APIKeyHeader(name=self.API_KEY_NAME, auto_error=True)
         self.API_KEY = self._initialize_api_key()
+        self.decoded_api_key = None
+        self.encoded_api_key = None
 
     def _initialize_api_key(self) -> str:
         """
@@ -38,14 +41,26 @@ class AuthWrapper:
             
             return self.get_api_key_from_k8s_secret(secret_name, namespace, secret_key)
         except Exception:
-            fallback_key = str(uuid.uuid4())
+            fallback_key = f"resource-explorer:fallback_key:{int(uuid.uuid1().time)}:{uuid.uuid4().hex}"
+            fallback_key = base64.b64encode(fallback_key.encode("utf-8")).decode("utf-8")
             print(f"No secrets or environment variables found.")
             print(f"Use a predefined API-Key only use this locally for testing purpose. Generated API Key: {fallback_key}")
             return fallback_key
 
     def get_api_key_from_k8s_secret(self, secret_name: str, namespace: str, key: str) -> str:
         """
-        Retrieve the API key from a Kubernetes secret.
+        Retrieve the API key from a Kubernetes secret and decode it from base64.
+
+        Args:
+            secret_name (str): The name of the Kubernetes secret.
+            namespace (str): The namespace where the secret is located.
+            key (str): The key in the secret containing the API key.
+
+        Returns:
+            str: The decoded API key.
+
+        Raises:
+            RuntimeError: If the secret or key is not found, or if decoding fails.
         """
         try:
             config.load_incluster_config()
@@ -54,7 +69,10 @@ class AuthWrapper:
             
             if key not in secret.data:
                 raise KeyError(f"Key '{key}' not found in Kubernetes secret '{secret_name}'")
-            return secret.data[key].encode("utf-8").decode("utf-8")
+            
+            self.encoded_api_key = secret.data[key]
+            self.decoded_api_key = base64.b64decode(self.encoded_api_key).decode("utf-8")
+            return self.decoded_api_key
         except client.ApiException as e:
             raise RuntimeError(f"Failed to retrieve Kubernetes secret '{secret_name}': {e.reason}")
         except KeyError as e:
