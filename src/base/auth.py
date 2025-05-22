@@ -1,14 +1,21 @@
 import os
 import uuid
 import base64
+import logging
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security.api_key import APIKeyHeader
 from kubernetes import client, config
 from base.helpers import KubernetesHelper
-import logging
 from typing import Optional
 
-
+# Configure logging for this module
+logger = logging.getLogger("AuthWrapper")
+if not logger.hasHandlers():  # Prevent duplicate handlers if logging is already configured
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    logger.setLevel(logging.DEBUG)  # Set the desired logging level (DEBUG, INFO, etc.)
 
 class AuthWrapper:
     def __init__(self, enable_validation: bool = True):
@@ -16,7 +23,6 @@ class AuthWrapper:
         Initialize the AuthWrapper.
 
         Args:
-            k8s_helper: An instance of KubernetesHelper (optional, for dependency injection).
             enable_validation: Whether to enable API key validation (useful for local development).
         """
         self.app = FastAPI()
@@ -24,8 +30,9 @@ class AuthWrapper:
         self.api_key_header = APIKeyHeader(name=self.API_KEY_NAME, auto_error=True)
         self.k8s_helper = KubernetesHelper()
         self.enable_validation = enable_validation
-        
-        self.logger = logging.getLogger(__name__)
+
+        # Use the module-level logger
+        self.logger = logger
 
         # Initialize API key
         self.API_KEY = self._initialize_api_key()
@@ -39,8 +46,8 @@ class AuthWrapper:
             secret_name = os.getenv("API_SECRET_NAME", "re-api-key")
             namespace = self.k8s_helper.get_namespace()
             secret_key = os.getenv("API_SECRET_KEY", "api-key")
-            
-            self.logger.info(f"Using secret_name: {secret_name}, namespace: {namespace}, secret_key: {secret_key}")
+
+            self.logger.info(f"Using secret_name: {secret_name}, namespace: {namespace}, secret_key: [MASKED]")
             self.logger.info(f"Attempting to retrieve API key from Kubernetes secret: {secret_name}")
             api_key = self.get_api_key_from_k8s_secret(secret_name, namespace, secret_key)
             self.logger.info("Successfully retrieved API key from Kubernetes secret.")
@@ -54,8 +61,7 @@ class AuthWrapper:
 
             fallback_key = self._generate_fallback_key()
             self.logger.warning("Using fallback API key for local testing.")
-            self.logger.warning(f"Generated fallback API key: {fallback_key}")
-            self.logger.warning("This fallback API key is for local testing only and should not be used in production.")
+            self.logger.debug(f"Generated fallback API key: {fallback_key}")
             return fallback_key
 
     def _generate_fallback_key(self) -> str:
@@ -63,6 +69,7 @@ class AuthWrapper:
         Generate a fallback API key for local testing.
         """
         fallback_key = f"resource-explorer:fallback_key:{int(uuid.uuid1().time)}:{uuid.uuid4().hex}"
+        self.logger.debug(f"Generated fallback API key: {fallback_key}")
         return base64.b64encode(fallback_key.encode("utf-8")).decode("utf-8")
 
     def get_api_key_from_k8s_secret(self, secret_name: str, namespace: str, key: str) -> str:
