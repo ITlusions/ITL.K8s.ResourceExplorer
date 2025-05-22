@@ -37,7 +37,8 @@ class AuthWrapper:
             secret_name = os.getenv("API_SECRET_NAME", "re-api-key")
             namespace = self.k8s_helper.get_namespace()
             secret_key = os.getenv("API_SECRET_KEY", "api-key")
-
+            
+            self.logger.info(f"Using secret_name: {secret_name}, namespace: {namespace}, secret_key: {secret_key}")
             self.logger.info(f"Attempting to retrieve API key from Kubernetes secret: {secret_name}")
             api_key = self.get_api_key_from_k8s_secret(secret_name, namespace, secret_key)
             self.logger.info("Successfully retrieved API key from Kubernetes secret.")
