@@ -5,6 +5,7 @@ from base.helpers import KubernetesHelper
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security.api_key import APIKeyHeader
 from kubernetes import client, config
+import logging
 
 """
 # Example usage
@@ -27,6 +28,7 @@ class AuthWrapper:
         self.API_KEY = self._initialize_api_key()
         self.decoded_api_key = None
         self.encoded_api_key = None
+        self.logger = logging.getLogger(__name__)
 
     def _initialize_api_key(self) -> str:
         """
@@ -74,9 +76,9 @@ class AuthWrapper:
             
             self.encoded_api_key = secret.data[key]
             self.decoded_api_key = base64.b64decode(self.encoded_api_key).decode("utf-8")
-
-            print(f"Encoded API Key: {self.encoded_api_key}")
-            print(f"Decoded API Key: {self.decoded_api_key}")
+            
+            self.logger.debug(f"Encoded API Key: {self.encoded_api_key}")
+            self.logger.debug(f"Decoded API Key: {self.decoded_api_key}")
 
             return self.decoded_api_key
         except client.ApiException as e:
