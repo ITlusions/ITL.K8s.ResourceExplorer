@@ -1,5 +1,6 @@
 import os
 import uuid
+from base.helpers import KubernetesHelper
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security.api_key import APIKeyHeader
 from kubernetes import client, config
@@ -14,6 +15,9 @@ def secure_endpoint(api_key: str = Depends(auth_wrapper.validate_api_key)):
     return {"message": "You have access to this secure endpoint!"}
 """
 
+
+k8s_helper = KubernetesHelper()
+
 class AuthWrapper:
     def __init__(self):
         self.app = FastAPI()
@@ -27,7 +31,7 @@ class AuthWrapper:
         """
         try:
             secret_name = os.getenv("API_SECRET_NAME", "re-api-key")
-            namespace = os.getenv("NAMESPACE", open("/var/run/secrets/kubernetes.io/serviceaccount/namespace").read().strip())
+            namespace = k8s_helper.get_namespace()
             secret_key = os.getenv("API_SECRET_KEY", "api-key")
             
             print(f"Using secret_name: {secret_name}, namespace: {namespace}, secret_key: {secret_key}")
