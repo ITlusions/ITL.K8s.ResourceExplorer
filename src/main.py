@@ -2,6 +2,7 @@ import os
 from fastapi import FastAPI, Depends
 from base.auth import AuthWrapper
 from base.k8s_config import load_k8s_config
+from base.helpers import KubernetesHelper
 from base.routers import router as base_router
 from v1.routers import (
     k8s as v1_k8s_resources_router,
@@ -18,8 +19,14 @@ from v1.routers import (
 load_k8s_config()
 print("Kubernetes configuration loaded successfully.")
 
-namespace = os.getenv("NAMESPACE", open("/var/run/secrets/kubernetes.io/serviceaccount/namespace").read().strip())
-print(f"Namespace: {namespace}")
+# Initialize KubernetesHelper
+k8s_helper = KubernetesHelper()
+
+# Display runtime context
+runtime_info = k8s_helper.get_runtime_info()
+print("Runtime Context:")
+for key, value in runtime_info.items():
+    print(f"  {key}: {value}")
 
 # Fetch dynamic configuration from environment variables
 root_path = os.getenv("ROOT_PATH", "/resource-explorer")
@@ -30,7 +37,7 @@ auth_wrapper = AuthWrapper()
 # Initialize FastAPI apps
 print("FastAPI applications initialized.")
 app = FastAPI(root_path=root_path, openapi_url=openapi_url)
-app_v1 = FastAPI(root_path=f"{root_path}/v1",openapi_url=f"{root_path}/openapi.json")
+app_v1 = FastAPI(root_path=f"{root_path}/v1", openapi_url=f"{root_path}/openapi.json")
 
 # Include routers
 app.include_router(base_router, tags=["Health"])
@@ -63,7 +70,8 @@ print(f"Docs URL: {app_v1.docs_url}")
 print(f"Redoc URL: {app_v1.redoc_url}")
 
 print("FastAPI application is ready to run.")
+
 # Run the application
-if __name__ == "__main__": 
+if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", port=8000, reload=True)

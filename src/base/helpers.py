@@ -1,11 +1,16 @@
 from fastapi import HTTPException
-from typing import Optional, Callable
-from pydantic import BaseModel
+from typing import Optional
 import os
 
 class KubernetesHelper:
     """
     A helper class for Kubernetes-related operations.
+
+    This class provides methods to retrieve runtime context information 
+    about the Kubernetes environment without directly interacting with 
+    the Kubernetes API. It relies on environment variables and file 
+    system paths that are typically available to pods running in a 
+    Kubernetes cluster.
     """
 
     def __init__(self):
