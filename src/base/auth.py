@@ -39,7 +39,9 @@ class AuthWrapper:
             
             print(f"Using secret_name: {secret_name}, namespace: {namespace}, secret_key: {secret_key}")
             
-            return self.get_api_key_from_k8s_secret(secret_name, namespace, secret_key)
+            self.API_KEY = self.get_api_key_from_k8s_secret(secret_name, namespace, secret_key)
+            
+            return self.API_KEY
         except Exception:
             fallback_key = f"resource-explorer:fallback_key:{int(uuid.uuid1().time)}:{uuid.uuid4().hex}"
             fallback_key = base64.b64encode(fallback_key.encode("utf-8")).decode("utf-8")
@@ -72,6 +74,10 @@ class AuthWrapper:
             
             self.encoded_api_key = secret.data[key]
             self.decoded_api_key = base64.b64decode(self.encoded_api_key).decode("utf-8")
+
+            print(f"Encoded API Key: {self.encoded_api_key}")
+            print(f"Decoded API Key: {self.decoded_api_key}")
+
             return self.decoded_api_key
         except client.ApiException as e:
             raise RuntimeError(f"Failed to retrieve Kubernetes secret '{secret_name}': {e.reason}")
