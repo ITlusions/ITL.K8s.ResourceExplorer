@@ -51,6 +51,8 @@ class AuthWrapper:
 
             fallback_key = self._generate_fallback_key()
             self.logger.warning("Using fallback API key for local testing.")
+            self.logger.warning(f"Generated fallback API key: {fallback_key}")
+            self.logger.warning("This fallback API key is for local testing only and should not be used in production.")
             return fallback_key
 
     def _generate_fallback_key(self) -> str:
