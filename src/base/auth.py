@@ -69,7 +69,6 @@ class AuthWrapper:
         Generate a fallback API key for local testing.
         """
         fallback_key = f"resource-explorer:fallback_key:{int(uuid.uuid1().time)}:{uuid.uuid4().hex}"
-        self.logger.debug(f"Generated fallback API key: {fallback_key}")
         return base64.b64encode(fallback_key.encode("utf-8")).decode("utf-8")
 
     def get_api_key_from_k8s_secret(self, secret_name: str, namespace: str, key: str) -> str:
