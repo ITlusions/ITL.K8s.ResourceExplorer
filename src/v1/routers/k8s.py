@@ -14,12 +14,35 @@ from v1.controllers.k8s import (
 from utils.auth import validate_token
 from typing import Optional
 from v1.controllers.k8s import list_pvcs, list_pvs
-from v1.models.models import PersistentVolumeClaim, PersistentVolume
+from v1.models.models import PersistentVolumeClaim, PersistentVolume, KubeconfigResponse, KubeconfigRequest
 
 k8s_resources_router = APIRouter(
     prefix="/k8s",
     tags=["K8s Resources"]
 )
+@k8s_resources_router("/", response_model=KubeconfigResponse)
+async def create_kubeconfig(request: KubeconfigRequest):
+    """
+    API endpoint to generate a kubeconfig file for a service account.
+
+    Args:
+        request (KubeconfigRequest): The request body containing service account details.
+
+    Returns:
+        KubeconfigResponse: A success message and the path to the generated kubeconfig file.
+    """
+    try:
+        kubeconfig_path = generate_kubeconfig(
+            service_account_name=request.service_account_name,
+            namespace=request.namespace,
+            output_file=request.output_file,
+        )
+        return KubeconfigResponse(
+            message="Kubeconfig generated successfully.",
+            kubeconfig_path=kubeconfig_path,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @k8s_resources_router.get("/resourcetypes", response_model=dict)
 async def list_resource_types():
