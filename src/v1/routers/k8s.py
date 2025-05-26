@@ -20,7 +20,7 @@ k8s_resources_router = APIRouter(
     prefix="/k8s",
     tags=["K8s Resources"]
 )
-@k8s_resources_router("/", response_model=KubeconfigResponse)
+@k8s_resources_router.post("/", response_model=KubeconfigResponse)
 async def create_kubeconfig(request: KubeconfigRequest):
     """
     API endpoint to generate a kubeconfig file for a service account.
