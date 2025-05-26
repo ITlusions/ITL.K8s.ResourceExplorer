@@ -53,3 +53,25 @@ roleRef:
   name: list-namespaces-and-secrets-cluster
   apiGroup: rbac.authorization.k8s.io
 ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: get-service-accounts-cluster
+rules:
+  - apiGroups: [""]
+    resources: ["serviceaccounts"]
+    verbs: ["get"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: bind-get-service-accounts-cluster
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "itl.common.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: get-service-accounts-cluster
+  apiGroup: rbac.authorization.k8s.io
