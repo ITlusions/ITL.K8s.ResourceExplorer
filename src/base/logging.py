@@ -16,6 +16,7 @@ class LoggerConfigurator:
         """
         self.level = level
         self.format = format
+        self.logger = logging.getLogger("ResourceExplorer")
 
     def configure_logging(self):
         """
@@ -24,14 +25,12 @@ class LoggerConfigurator:
         Returns:
             logging.Logger: Configured logger instance.
         """
-        # Configure logging globally
-        logging.basicConfig(
-            level=self.level,
-            format=self.format,
-            handlers=[
-                logging.StreamHandler()
-            ],
-        )
+        if not self.logger.hasHandlers():  # Prevent duplicate handlers
+            handler = logging.StreamHandler()
+            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+            handler.setFormatter(formatter)
+            self.logger.addHandler(handler)
+            self.logger.setLevel(logging.DEBUG)  # Set desired logging level
 
         # Create and return a logger for the application
         logger = logging.getLogger(__name__)
