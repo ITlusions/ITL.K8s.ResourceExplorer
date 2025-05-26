@@ -36,3 +36,15 @@ class LoggerConfigurator:
         logger = logging.getLogger(__name__)
         logger.setLevel(self.level)
         return logger
+
+    def log_message(self, level, message):
+        """
+        Logs a message at the specified logging level.
+
+        Args:
+            level (int): Logging level (e.g., logging.DEBUG, logging.INFO).
+            message (str): The message to log.
+        """
+        if not self.logger:
+            self.configure_logging()
+        self.logger.log(level, message)

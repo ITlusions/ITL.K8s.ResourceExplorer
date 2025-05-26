@@ -20,7 +20,7 @@ from v1.routers import (
 # Initialize logging
 logger = LoggerConfigurator()
 logger.configure_logging()
-logger.info("Logging has been configured successfully.")
+logger.log_message("Logging has been configured successfully.")
 
 # Load Kubernetes configuration
 load_k8s_config()
