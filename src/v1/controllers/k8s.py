@@ -460,3 +460,86 @@ async def list_service_accounts_and_kubeconfigs(namespace: str, output_dir: str 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
+def generate_kubeconfig_as_dict(service_account_name: str, namespace: str) -> dict:
+    """
+    Generate a kubeconfig for a specific service account and return it as a dictionary.
+
+    Args:
+        service_account_name (str): The name of the service account.
+        namespace (str): The namespace where the service account is located.
+
+    Returns:
+        dict: The kubeconfig content as a dictionary.
+
+    Raises:
+        Exception: If the service account or related resources cannot be retrieved.
+    """
+    try:
+        # Load Kubernetes configuration
+        config.load_kube_config()  # Use load_incluster_config() if running inside a cluster
+
+        # Create API clients
+        core_v1_api = client.CoreV1Api()
+
+        # Get the service account
+        service_account = core_v1_api.read_namespaced_service_account(
+            name=service_account_name, namespace=namespace
+        )
+
+        # Get the secret associated with the service account
+        if not service_account.secrets:
+            raise Exception(f"Service account '{service_account_name}' does not have an associated secret.")
+        
+        secret_name = service_account.secrets[0].name
+        secret = core_v1_api.read_namespaced_secret(name=secret_name, namespace=namespace)
+
+        # Extract the token, CA certificate, and API server endpoint
+        token = secret.data["token"]
+        ca_cert = secret.data["ca.crt"]
+        api_server = config.kube_config.Configuration().host
+
+        # Decode the token and CA certificate
+        token = base64.b64decode(token).decode("utf-8")
+        ca_cert = base64.b64decode(ca_cert).decode("utf-8")
+
+        # Create the kubeconfig content
+        kubeconfig = {
+            "apiVersion": "v1",
+            "kind": "Config",
+            "clusters": [
+                {
+                    "name": "kubernetes",
+                    "cluster": {
+                        "certificate-authority-data": ca_cert,
+                        "server": api_server,
+                    },
+                }
+            ],
+            "contexts": [
+                {
+                    "name": "default",
+                    "context": {
+                        "cluster": "kubernetes",
+                        "user": service_account_name,
+                        "namespace": namespace,
+                    },
+                }
+            ],
+            "current-context": "default",
+            "users": [
+                {
+                    "name": service_account_name,
+                    "user": {
+                        "token": token,
+                    },
+                }
+            ],
+        }
+
+        return kubeconfig
+
+    except ApiException as e:
+        raise Exception(f"Failed to generate kubeconfig: {e.reason}")
+    except Exception as e:
+        raise Exception(f"An unexpected error occurred: {str(e)}")
+
