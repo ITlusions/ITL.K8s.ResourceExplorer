@@ -32,7 +32,7 @@ async def create_kubeconfig(request: KubeconfigRequest):
         KubeconfigResponse: A success message and the path to the generated kubeconfig file.
     """
     try:
-        kubeconfig_path = generate_kubeconfig(
+        kubeconfig_path = await generate_kubeconfig(
             service_account_name=request.service_account_name,
             namespace=request.namespace,
             output_file=request.output_file,
@@ -41,6 +41,8 @@ async def create_kubeconfig(request: KubeconfigRequest):
             message="Kubeconfig generated successfully.",
             kubeconfig_path=kubeconfig_path,
         )
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
