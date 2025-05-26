@@ -5,6 +5,7 @@ from base.k8s_config import load_k8s_config
 from base.helpers import KubernetesHelper
 from base.routers import router as base_router
 from base.logging import LoggerConfigurator
+import logging
 
 from v1.routers import (
     k8s as v1_k8s_resources_router,
@@ -19,8 +20,9 @@ from v1.routers import (
 
 # Initialize logging
 logger = LoggerConfigurator()
+
 logger.configure_logging()
-logger.log_message("Logging has been configured successfully.")
+logger.log_message(logging.INFO,"Logging has been configured successfully.")
 
 # Load Kubernetes configuration
 load_k8s_config()
