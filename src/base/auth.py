@@ -15,7 +15,7 @@ if not logger.hasHandlers():  # Prevent duplicate handlers if logging is already
     formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
-    logger.setLevel(logging.DEBUG)  # Set the desired logging level (DEBUG, INFO, etc.)
+    logger.setLevel(logging.INFO)  # Set the desired logging level (DEBUG, INFO, etc.)
 
 class AuthWrapper:
     def __init__(self, enable_validation: bool = True):
@@ -51,6 +51,8 @@ class AuthWrapper:
             self.logger.info(f"Attempting to retrieve API key from Kubernetes secret: {secret_name}")
             api_key = self.get_api_key_from_k8s_secret(secret_name, namespace, secret_key)
             self.logger.info("Successfully retrieved API key from Kubernetes secret.")
+            self.logger.info(f"API key created-on: {self.extract_api_key_data(api_key).get('timestamp') if self.extract_api_key_data(api_key) else 'N/A'}")
+            
             return api_key
         except Exception as e:
             self.logger.warning(f"Failed to retrieve API key from Kubernetes secret: {e}")
@@ -131,3 +133,41 @@ class AuthWrapper:
 
         self.logger.info("API key validated successfully.")
         return api_key
+    
+    def extract_api_key_data(self, api_key: str, strict: bool = False) -> Optional[dict]:
+        """
+        Decode and extract data from the API key if possible.
+
+        Args:
+            api_key (str): The API key to decode and extract.
+            strict (bool): If True, raise exception on decode/extract failure. If False, return None.
+
+        Returns:
+            Optional[dict]: Extracted data if successful, None otherwise.
+
+        Raises:
+            Exception: If strict is True and decoding or extraction fails.
+        """
+        try:
+            decoded = base64.b64decode(api_key).decode("utf-8")
+            parts = decoded.split(":")
+            if len(parts) == 4:
+                releasename, timestamp, randomstring, checksum = parts
+                self.logger.debug(
+                    f"Extracted from API key - releasename: {releasename}, timestamp: {timestamp}, randomstring: {randomstring}, checksum: {checksum}"
+                )
+                return {
+                    "releasename": releasename,
+                    "timestamp": timestamp,
+                    "randomstring": randomstring,
+                    "checksum": checksum,
+                }
+            else:
+                self.logger.warning("API key format is invalid for extraction.")
+                if strict:
+                    raise ValueError("API key format is invalid for extraction.")
+        except Exception as e:
+            self.logger.warning(f"Failed to decode or extract API key data: {e}")
+            if strict:
+                raise
+        return None
