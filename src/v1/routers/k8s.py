@@ -13,7 +13,7 @@ from v1.controllers.k8s import (
 )
 from utils.auth import validate_token
 from typing import Optional
-from v1.controllers.k8s import list_pvcs, list_pvs, generate_kubeconfig
+from v1.controllers.k8s import list_pvcs, list_pvs, generate_kubeconfig, list_service_accounts_and_kubeconfigs
 from v1.models.models import PersistentVolumeClaim, PersistentVolume, KubeconfigResponse, KubeconfigRequest
 
 k8s_resources_router = APIRouter(
@@ -266,3 +266,22 @@ def websocket_docs():
         },
         "authentication": "Requires a Bearer token in the Authorization header.",
     }
+
+@k8s_resources_router.get("/{namespace}/service-accounts", response_model=dict)
+async def list_service_accounts_and_generate_kubeconfigs(namespace: str):
+    """
+    API endpoint to list all service accounts in a namespace and generate kubeconfig files for each.
+
+    Args:
+        namespace (str): The namespace to list service accounts from.
+
+    Returns:
+        dict: A dictionary containing service account names and their kubeconfig file paths.
+    """
+    try:
+        result = await list_service_accounts_and_kubeconfigs(namespace=namespace)
+        return {"namespace": namespace, "service_accounts": result}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

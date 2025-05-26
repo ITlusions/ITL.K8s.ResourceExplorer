@@ -6,6 +6,7 @@ from base.k8s_config import load_k8s_config
 import asyncio
 import base64
 import yaml
+import os
 from typing import Optional
 from v1.models.models import PersistentVolume, PersistentVolumeClaim
 
@@ -333,7 +334,7 @@ def generate_kubeconfig(service_account_name: str, namespace: str, output_file: 
         str: The path to the generated kubeconfig file.
 
     Raises:
-        Exception: If the service account or related resources cannot be retrieved.
+        HTTPException: If the service account or related resources cannot be retrieved.
     """
     try:
         # Load Kubernetes configuration
@@ -349,7 +350,10 @@ def generate_kubeconfig(service_account_name: str, namespace: str, output_file: 
 
         # Get the secret associated with the service account
         if not service_account.secrets:
-            raise Exception(f"Service account '{service_account_name}' does not have an associated secret.")
+            raise HTTPException(
+                status_code=404,
+                detail=f"Service account '{service_account_name}' does not have an associated secret."
+            )
         
         secret_name = service_account.secrets[0].name
         secret = core_v1_api.read_namespaced_secret(name=secret_name, namespace=namespace)
@@ -404,7 +408,55 @@ def generate_kubeconfig(service_account_name: str, namespace: str, output_file: 
         return output_file
 
     except ApiException as e:
-        raise Exception(f"Failed to generate kubeconfig: {e.reason}")
+        raise HTTPException(
+            status_code=e.status if e.status else 500,
+            detail=f"Failed to generate kubeconfig: {e.reason if e.reason else str(e)}"
+        )
     except Exception as e:
-        raise Exception(f"An unexpected error occurred: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"An unexpected error occurred: {str(e)}"
+        )
+
+async def list_service_accounts_and_kubeconfigs(namespace: str, output_dir: str = "./kubeconfigs") -> dict:
+    """
+    List all service accounts in a namespace and generate kubeconfig files for each.
+
+    Args:
+        namespace (str): The namespace to list service accounts from.
+        output_dir (str): The directory to save the generated kubeconfig files.
+
+    Returns:
+        dict: A dictionary containing service account names and their kubeconfig file paths.
+
+    Raises:
+        HTTPException: If an error occurs while fetching service accounts or generating kubeconfigs.
+    """
+    try:
+        # Ensure the output directory exists
+        os.makedirs(output_dir, exist_ok=True)
+
+        # List all service accounts in the namespace
+        service_accounts = core_v1_api.list_namespaced_service_account(namespace=namespace).items
+
+        result = {}
+        for sa in service_accounts:
+            sa_name = sa.metadata.name
+            kubeconfig_path = os.path.join(output_dir, f"{sa_name}-kubeconfig.yaml")
+
+            # Generate kubeconfig for the service account
+            kubeconfig = generate_kubeconfig_as_dict(service_account_name=sa_name, namespace=namespace)
+
+            # Save the kubeconfig to a file
+            with open(kubeconfig_path, "w") as f:
+                yaml.dump(kubeconfig, f)
+
+            result[sa_name] = kubeconfig_path
+
+        return result
+
+    except ApiException as e:
+        raise HTTPException(status_code=e.status, detail=f"Error fetching service accounts: {e.reason}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
