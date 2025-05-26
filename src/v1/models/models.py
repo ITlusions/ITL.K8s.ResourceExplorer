@@ -166,3 +166,14 @@ class PersistentVolume(BaseModel):
     reclaim_policy: Optional[str]
     storage_class: Optional[str]
     volume_mode: Optional[str]
+
+
+class KubeconfigRequest(BaseModel):
+    service_account_name: str = Field(..., description="The name of the service account.")
+    namespace: str = Field(..., description="The namespace where the service account is located.")
+    output_file: str = Field("kubeconfig.yaml", description="The file path to save the generated kubeconfig.")
+
+
+class KubeconfigResponse(BaseModel):
+    message: str = Field(..., description="A success message.")
+    kubeconfig_path: str = Field(..., description="The path to the generated kubeconfig file.")
