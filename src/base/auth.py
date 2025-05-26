@@ -49,9 +49,9 @@ class AuthWrapper:
 
             self.logger.info(f"Using secret_name: {secret_name}, namespace: {namespace}, secret_key: [MASKED]")
             self.logger.info(f"Attempting to retrieve API key from Kubernetes secret: {secret_name}")
-            self.api_key = self.get_api_key_from_k8s_secret(secret_name, namespace, secret_key)
+            api_key = self.get_api_key_from_k8s_secret(secret_name, namespace, secret_key)
             self.logger.info("Successfully retrieved API key from Kubernetes secret.")
-            return self.api_key
+            return api_key
         except Exception as e:
             self.logger.warning(f"Failed to retrieve API key from Kubernetes secret: {e}")
             env_api_key = os.getenv("FALLBACK_API_KEY")
@@ -59,10 +59,10 @@ class AuthWrapper:
                 self.logger.info("Using API key from environment variable.")
                 return env_api_key
 
-            self.api_key = self._generate_fallback_key()
+            fallback_key = self._generate_fallback_key()
             self.logger.warning("Using fallback API key for local testing.")
             self.logger.debug(f"Generated fallback API key: {fallback_key}")
-            return self.api_key
+            return fallback_key
 
     def _generate_fallback_key(self) -> str:
         """
