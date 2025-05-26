@@ -13,7 +13,7 @@ from v1.controllers.k8s import (
 )
 from utils.auth import validate_token
 from typing import Optional
-from v1.controllers.k8s import list_pvcs, list_pvs
+from v1.controllers.k8s import list_pvcs, list_pvs, generate_kubeconfig
 from v1.models.models import PersistentVolumeClaim, PersistentVolume, KubeconfigResponse, KubeconfigRequest
 
 k8s_resources_router = APIRouter(
