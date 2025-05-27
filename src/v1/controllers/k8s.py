@@ -2,7 +2,7 @@ import asyncio
 import base64
 import yaml
 import os
-import datetime
+from datetime import datetime
 from fastapi import HTTPException, WebSocket
 from kubernetes import client, watch, config, stream
 from kubernetes.client.exceptions import ApiException
