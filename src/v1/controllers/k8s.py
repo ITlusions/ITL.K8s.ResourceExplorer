@@ -418,40 +418,31 @@ def generate_kubeconfig(service_account_name: str, namespace: str, output_file: 
             detail=f"An unexpected error occurred: {str(e)}"
         )
 
-async def list_service_accounts_and_kubeconfigs(namespace: str, output_dir: str = "./kubeconfigs") -> dict:
+async def list_service_accounts_and_kubeconfigs(namespace: str) -> dict:
     """
-    List all service accounts in a namespace and generate kubeconfig files for each.
+    List all service accounts in a namespace and generate kubeconfigs for each.
 
     Args:
         namespace (str): The namespace to list service accounts from.
-        output_dir (str): The directory to save the generated kubeconfig files.
 
     Returns:
-        dict: A dictionary containing service account names and their kubeconfig file paths.
+        dict: A dictionary containing service account names and their kubeconfig content.
 
     Raises:
         HTTPException: If an error occurs while fetching service accounts or generating kubeconfigs.
     """
     try:
-        # Ensure the output directory exists
-        os.makedirs(output_dir, exist_ok=True)
-
         # List all service accounts in the namespace
         service_accounts = core_v1_api.list_namespaced_service_account(namespace=namespace).items
 
         result = {}
         for sa in service_accounts:
             sa_name = sa.metadata.name
-            kubeconfig_path = os.path.join(output_dir, f"{sa_name}-kubeconfig.yaml")
 
             # Generate kubeconfig for the service account
             kubeconfig = generate_kubeconfig_as_dict(service_account_name=sa_name, namespace=namespace)
 
-            # Save the kubeconfig to a file
-            with open(kubeconfig_path, "w") as f:
-                yaml.dump(kubeconfig, f)
-
-            result[sa_name] = kubeconfig_path
+            result[sa_name] = kubeconfig
 
         return result
 
