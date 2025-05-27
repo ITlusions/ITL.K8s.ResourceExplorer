@@ -15,7 +15,6 @@ from v1.controllers.k8s import (
 )
 from utils.auth import validate_token
 from typing import Optional
-from v1.controllers.k8s import 
 
 k8s_resources_router = APIRouter(
     prefix="/k8s",
