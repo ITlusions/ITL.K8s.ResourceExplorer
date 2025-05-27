@@ -9,6 +9,7 @@ from kubernetes.client.exceptions import ApiException
 from base.k8s_config import load_k8s_config
 from typing import Optional
 from v1.models.models import PersistentVolume, PersistentVolumeClaim, StorageClass
+import traceback
 
 # Load Kubernetes Configurations
 load_k8s_config()
@@ -638,12 +639,6 @@ async def rollout_restart_deployment(namespace: str, deployment_name: str) -> di
         HTTPException: If the deployment cannot be found or an error occurs.
     """
     try:
-        # Load Kubernetes configuration (in-cluster or kubeconfig)
-        config.load_kube_config()
-
-        # Create an API client for deployments
-        apps_v1_api = client.AppsV1Api()
-
         # Retrieve the deployment
         deployment = apps_v1_api.read_namespaced_deployment(name=deployment_name, namespace=namespace)
 
@@ -662,5 +657,10 @@ async def rollout_restart_deployment(namespace: str, deployment_name: str) -> di
             raise HTTPException(status_code=404, detail=f"Deployment '{deployment_name}' not found in namespace '{namespace}'.")
         raise HTTPException(status_code=e.status, detail=f"Error restarting deployment: {e.reason}")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+        error_details = traceback.format_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"An unexpected error occurred: {str(e)}",
+            headers={"X-Debug-Info": error_details}
+        )
 
