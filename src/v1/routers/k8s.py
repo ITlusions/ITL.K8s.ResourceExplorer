@@ -11,7 +11,8 @@ from v1.controllers.k8s import (
     controller_list_storage_classes,  # Ensure the correct import
     interactive_exec,
     get_in_cluster_config,
-    list_pvcs, list_pvs, generate_kubeconfig, list_service_accounts_and_kubeconfigs
+    list_pvcs, list_pvs, generate_kubeconfig, list_service_accounts_and_kubeconfigs,
+    rollout_restart_deployment
 )
 from utils.auth import validate_token
 from typing import Optional
@@ -315,6 +316,25 @@ async def get_in_cluster_config_endpoint():
     """
     try:
         return get_in_cluster_config()
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@k8s_resources_router.post("/{namespace}/deployments/{deployment_name}/restart", response_model=dict, tags=["Deployments"])
+async def restart_deployment(namespace: str, deployment_name: str):
+    """
+    API endpoint to perform a rollout restart of a Kubernetes deployment.
+
+    Args:
+        namespace (str): The namespace of the deployment.
+        deployment_name (str): The name of the deployment to restart.
+
+    Returns:
+        dict: A success message indicating the deployment was restarted.
+    """
+    try:
+        return await rollout_restart_deployment(namespace, deployment_name)
     except HTTPException as e:
         raise e
     except Exception as e:
