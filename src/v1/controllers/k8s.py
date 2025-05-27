@@ -10,6 +10,7 @@ from base.k8s_config import load_k8s_config
 from typing import Optional
 from v1.models.models import PersistentVolume, PersistentVolumeClaim, StorageClass
 import traceback
+import logging
 
 # Load Kubernetes Configurations
 load_k8s_config()
@@ -658,6 +659,9 @@ async def rollout_restart_deployment(namespace: str, deployment_name: str) -> di
         raise HTTPException(status_code=e.status, detail=f"Error restarting deployment: {e.reason}")
     except Exception as e:
         error_details = traceback.format_exc()
+        # Log the error details using a logger
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error details: {error_details}")
         raise HTTPException(
             status_code=500,
             detail=f"An unexpected error occurred: {str(e)}",
