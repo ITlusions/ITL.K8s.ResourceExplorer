@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, WebSocket, Query, Depends
 from fastapi.responses import JSONResponse
 from kubernetes.client.exceptions import ApiException
-from v1.models.models import ResourceDetail, NotFoundResponse, StorageClass
+from v1.models.models import ResourceDetail, NotFoundResponse, StorageClass, PersistentVolumeClaim, PersistentVolume, KubeconfigResponse, KubeconfigRequest
 from v1.controllers.k8s import (
     get_all_resource_types as controller_get_all_resource_types,
     describe_resource as controller_describe_resource,
@@ -10,12 +10,12 @@ from v1.controllers.k8s import (
     list_nodes as controller_list_nodes,
     controller_list_storage_classes,  # Ensure the correct import
     interactive_exec,
-    get_in_cluster_config
+    get_in_cluster_config,
+    list_pvcs, list_pvs, generate_kubeconfig, list_service_accounts_and_kubeconfigs
 )
 from utils.auth import validate_token
 from typing import Optional
-from v1.controllers.k8s import list_pvcs, list_pvs, generate_kubeconfig, list_service_accounts_and_kubeconfigs
-from v1.models.models import PersistentVolumeClaim, PersistentVolume, KubeconfigResponse, KubeconfigRequest
+from v1.controllers.k8s import 
 
 k8s_resources_router = APIRouter(
     prefix="/k8s",
@@ -208,6 +208,25 @@ async def list_storage_classes():
         return await controller_list_storage_classes()
     except ApiException as e:
         raise HTTPException(status_code=e.status, detail=e.reason)
+
+@k8s_resources_router.get("/storageclasses/{storage_class_name}", response_model=dict, tags=["StorageClasses"])
+async def get_k8s_storage_class(storage_class_name: str):
+    """
+    Retrieve a specific StorageClass by name.
+
+    Args:
+        storage_class_name (str): The name of the StorageClass to retrieve.
+
+    Returns:
+        dict: The full dictionary representation of the StorageClass.
+    """
+    try:
+        from v1.controllers.k8s import get_storage_class
+        return await get_storage_class(storage_class_name)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @k8s_resources_router.get("/pvcs", response_model=list[PersistentVolumeClaim])
 async def get_pvcs(namespace: Optional[str] = None):

@@ -596,3 +596,30 @@ def get_in_cluster_config() -> dict:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to retrieve in-cluster configuration: {str(e)}")
 
+async def get_storage_class(storage_class_name: str) -> dict:
+    """
+    Retrieve a specific StorageClass by name and return its full dictionary representation.
+
+    Args:
+        storage_class_name (str): The name of the StorageClass to retrieve.
+
+    Returns:
+        dict: The full dictionary representation of the StorageClass.
+
+    Raises:
+        HTTPException: If the StorageClass cannot be found or an error occurs.
+    """
+    try:
+        # Retrieve the StorageClass by name
+        storage_class = storage_v1_api.read_storage_class(name=storage_class_name)
+
+        # Convert the StorageClass object to a dictionary
+        return storage_class.to_dict()
+
+    except ApiException as e:
+        if e.status == 404:
+            raise HTTPException(status_code=404, detail=f"StorageClass '{storage_class_name}' not found.")
+        raise HTTPException(status_code=e.status, detail=f"Error retrieving StorageClass: {e.reason}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+
