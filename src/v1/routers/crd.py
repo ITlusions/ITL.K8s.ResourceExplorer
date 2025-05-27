@@ -1,12 +1,12 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from v1.controllers.crd import CRDManager
 from v1.models.models import CRDItemRequest
 from pydantic import BaseModel, create_model
 from typing import List, Optional, Dict, Any
 
-router = APIRouter(prefix="/crds", tags=["K8s Resources"])
+router = APIRouter(prefix="/crds", tags=["Custom Resources"])
 
-@router.get("/list-crds")
+@router.get("/")
 def list_crds():
     """
     API endpoint to list all Custom Resource Definitions (CRDs).
@@ -27,6 +27,21 @@ def get_items_from_crd(request: CRDItemRequest):
         plural=request.plural,
         namespace=request.namespace,
     )
+
+@router.get("/{group}/{version}/{plural}/{namespace}")
+def list_namespaced_crd_items(group: str, version: str, plural: str, namespace: str):
+    """
+    List items from a namespaced CRD.
+    """
+    return crd_manager.get_crd_items(group=group, version=version, plural=plural, namespace=namespace)
+
+@router.get("/{group}/{version}/{plural}/{namespace}/{name}")
+def get_namespaced_crd_item(group: str, version: str, plural: str, namespace: str, name: str):
+    """
+    Get a specific item from a namespaced CRD.
+    """
+    items = crd_manager.get_crd_items(group=group, version=version, plural=plural, namespace=namespace)
+    return next((item for item in items.get("items", []) if item["metadata"]["name"] == name), None)
 
 # Dynamically create and add CRD routes
 crd_manager = CRDManager()
