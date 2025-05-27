@@ -56,7 +56,7 @@ v1_routers = [
     (v1_s3_router.router, "S3"),
     (v1_connection_router.router, "Connection"),
     (v1_test_manager_router.router, "Test"),
-    (v1_crd_router.router, "K8s Resources"),
+    (v1_crd_router.router, "Custom Resources"),
     (v1_pypi_router.router, "PyPi"),
     (v1_acr_router.router, "ACR"),
 ]
