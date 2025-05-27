@@ -1,12 +1,12 @@
-from fastapi import HTTPException, WebSocket
-from kubernetes import client, watch, config, stream
-from kubernetes.client.exceptions import ApiException
-from base.k8s_config import load_k8s_config
-
 import asyncio
 import base64
 import yaml
 import os
+import datetime
+from fastapi import HTTPException, WebSocket
+from kubernetes import client, watch, config, stream
+from kubernetes.client.exceptions import ApiException
+from base.k8s_config import load_k8s_config
 from typing import Optional
 from v1.models.models import PersistentVolume, PersistentVolumeClaim, StorageClass
 
@@ -620,6 +620,47 @@ async def get_storage_class(storage_class_name: str) -> dict:
         if e.status == 404:
             raise HTTPException(status_code=404, detail=f"StorageClass '{storage_class_name}' not found.")
         raise HTTPException(status_code=e.status, detail=f"Error retrieving StorageClass: {e.reason}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+
+async def rollout_restart_deployment(namespace: str, deployment_name: str) -> dict:
+    """
+    Perform a rollout restart of a Kubernetes deployment.
+
+    Args:
+        namespace (str): The namespace of the deployment.
+        deployment_name (str): The name of the deployment to restart.
+
+    Returns:
+        dict: A success message indicating the deployment was restarted.
+
+    Raises:
+        HTTPException: If the deployment cannot be found or an error occurs.
+    """
+    try:
+        # Load Kubernetes configuration (in-cluster or kubeconfig)
+        config.load_kube_config()
+
+        # Create an API client for deployments
+        apps_v1_api = client.AppsV1Api()
+
+        # Retrieve the deployment
+        deployment = apps_v1_api.read_namespaced_deployment(name=deployment_name, namespace=namespace)
+
+        # Add or update an annotation to trigger a restart
+        annotations = deployment.spec.template.metadata.annotations or {}
+        annotations["kubectl.kubernetes.io/restartedAt"] = datetime.utcnow().isoformat()
+        deployment.spec.template.metadata.annotations = annotations
+
+        # Update the deployment
+        apps_v1_api.patch_namespaced_deployment(name=deployment_name, namespace=namespace, body=deployment)
+
+        return {"message": f"Deployment '{deployment_name}' in namespace '{namespace}' restarted successfully."}
+
+    except client.exceptions.ApiException as e:
+        if e.status == 404:
+            raise HTTPException(status_code=404, detail=f"Deployment '{deployment_name}' not found in namespace '{namespace}'.")
+        raise HTTPException(status_code=e.status, detail=f"Error restarting deployment: {e.reason}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
