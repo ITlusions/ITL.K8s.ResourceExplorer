@@ -543,3 +543,36 @@ def generate_kubeconfig_as_dict(service_account_name: str, namespace: str) -> di
     except Exception as e:
         raise Exception(f"An unexpected error occurred: {str(e)}")
 
+def get_in_cluster_config() -> dict:
+    """
+    Retrieve the in-cluster Kubernetes configuration.
+
+    Returns:
+        dict: A dictionary containing the API server endpoint, CA certificate, and token.
+
+    Raises:
+        HTTPException: If the in-cluster configuration cannot be loaded.
+    """
+    try:
+        # Load in-cluster configuration
+        config.load_incluster_config()
+
+        # Read the service account token and CA certificate from the default paths
+        with open("/var/run/secrets/kubernetes.io/serviceaccount/token", "r") as token_file:
+            token = token_file.read().strip()
+
+        with open("/var/run/secrets/kubernetes.io/serviceaccount/ca.crt", "r") as ca_file:
+            ca_cert = ca_file.read().strip()
+
+        # Get the API server endpoint
+        api_server = config.kube_config.Configuration().host
+
+        return {
+            "api_server": api_server,
+            "token": token,
+            "ca_cert": ca_cert,
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve in-cluster configuration: {str(e)}")
+

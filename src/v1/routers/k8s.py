@@ -9,7 +9,8 @@ from v1.controllers.k8s import (
     list_ingresses as controller_list_ingresses,
     list_nodes as controller_list_nodes,
     controller_list_storage_classes,  # Ensure the correct import
-    interactive_exec
+    interactive_exec,
+    get_in_cluster_config
 )
 from utils.auth import validate_token
 from typing import Optional
@@ -281,6 +282,21 @@ async def list_service_accounts_and_generate_kubeconfigs(namespace: str):
     try:
         result = await list_service_accounts_and_kubeconfigs(namespace=namespace)
         return {"namespace": namespace, "service_accounts": result}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@k8s_resources_router.get("/in-cluster-config", response_model=dict)
+async def get_in_cluster_config_endpoint():
+    """
+    API endpoint to retrieve the in-cluster Kubernetes configuration.
+
+    Returns:
+        dict: A dictionary containing the API server endpoint, CA certificate, and token.
+    """
+    try:
+        return get_in_cluster_config()
     except HTTPException as e:
         raise e
     except Exception as e:
