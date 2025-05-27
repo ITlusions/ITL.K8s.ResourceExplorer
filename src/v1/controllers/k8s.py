@@ -8,7 +8,7 @@ import base64
 import yaml
 import os
 from typing import Optional
-from v1.models.models import PersistentVolume, PersistentVolumeClaim
+from v1.models.models import PersistentVolume, PersistentVolumeClaim, StorageClass
 
 # Load Kubernetes Configurations
 load_k8s_config()
@@ -202,24 +202,24 @@ async def list_nodes() -> list:
     except ApiException as e:
         raise HTTPException(status_code=e.status, detail=f"Error retrieving nodes: {e.reason}")
 
-async def controller_list_storage_classes():
+async def controller_list_storage_classes() -> list[StorageClass]:
     """
     Controller to list all StorageClasses in the Kubernetes cluster.
     """
     try:
-        # Fetch all storage classes
         storage_classes = storage_v1_api.list_storage_class()
         return [
-            {
-                "name": sc.metadata.name,
-                "provisioner": sc.provisioner,
-                "reclaim_policy": sc.reclaim_policy,
-                "volume_binding_mode": sc.volume_binding_mode,
-            }
+            StorageClass(
+                name=sc.metadata.name,
+                namespace=None,
+                message="StorageClass retrieved successfully",
+                reason=None,
+                timestamp=sc.metadata.creation_timestamp.isoformat() if sc.metadata.creation_timestamp else None,
+            )
             for sc in storage_classes.items
         ]
     except client.exceptions.ApiException as e:
-        raise ApiException(status=e.status, reason=e.reason)
+        raise HTTPException(status_code=e.status, detail=f"Error fetching StorageClasses: {e.reason}")
 
 async def interactive_exec(websocket: WebSocket, namespace: str, pod_name: str, container_name: str):
     """
