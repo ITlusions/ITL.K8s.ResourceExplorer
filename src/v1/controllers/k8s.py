@@ -534,7 +534,7 @@ def generate_kubeconfig_as_dict(service_account_name: str, namespace: str) -> di
     except Exception as e:
         raise Exception(f"An unexpected error occurred: {str(e)}")
 
-def get_in_cluster_configs() -> dict:
+def get_in_cluster_config() -> dict:
     """
     Retrieve the in-cluster Kubernetes configuration and return it as a kubeconfig dictionary.
 
