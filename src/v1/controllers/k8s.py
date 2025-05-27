@@ -534,12 +534,12 @@ def generate_kubeconfig_as_dict(service_account_name: str, namespace: str) -> di
     except Exception as e:
         raise Exception(f"An unexpected error occurred: {str(e)}")
 
-def get_in_cluster_config() -> dict:
+def get_in_cluster_config_as_kubeconfig() -> dict:
     """
-    Retrieve the in-cluster Kubernetes configuration.
+    Retrieve the in-cluster Kubernetes configuration and return it as a kubeconfig dictionary.
 
     Returns:
-        dict: A dictionary containing the API server endpoint, CA certificate, and token.
+        dict: A kubeconfig dictionary containing the API server endpoint, CA certificate, and token.
 
     Raises:
         HTTPException: If the in-cluster configuration cannot be loaded.
@@ -558,11 +558,40 @@ def get_in_cluster_config() -> dict:
         # Get the API server endpoint
         api_server = config.kube_config.Configuration().host
 
-        return {
-            "api_server": api_server,
-            "token": token,
-            "ca_cert": ca_cert,
+        # Construct the kubeconfig dictionary
+        kubeconfig = {
+            "apiVersion": "v1",
+            "kind": "Config",
+            "clusters": [
+                {
+                    "name": "kubernetes",
+                    "cluster": {
+                        "certificate-authority-data": base64.b64encode(ca_cert.encode()).decode(),
+                        "server": api_server,
+                    },
+                }
+            ],
+            "contexts": [
+                {
+                    "name": "default",
+                    "context": {
+                        "cluster": "kubernetes",
+                        "user": "default",
+                    },
+                }
+            ],
+            "current-context": "default",
+            "users": [
+                {
+                    "name": "default",
+                    "user": {
+                        "token": token,
+                    },
+                }
+            ],
         }
+
+        return kubeconfig
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to retrieve in-cluster configuration: {str(e)}")
