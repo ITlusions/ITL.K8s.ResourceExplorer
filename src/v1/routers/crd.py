@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from v1.controllers.crd import CRDManager
+from v1.models.models import CRDItemRequest
 from pydantic import BaseModel, create_model
 from typing import List, Optional, Dict, Any
 
@@ -13,20 +14,32 @@ def list_crds():
     crd_manager = CRDManager()
     return crd_manager.list_crds()
 
-@router.get("/{group}/{version}/{plural}")
-def list_crd_items(group: str, version: str, plural: str, namespace: Optional[str] = None):
+@router.post("/items")
+def get_items_from_crd(request: CRDItemRequest):
     """
-    List items from a CRD.
+    API endpoint to get items from a specific CRD.
     """
     crd_manager = CRDManager()
+
+    return crd_manager.get_crd_items(
+        group=request.group,
+        version=request.version,
+        plural=request.plural,
+        namespace=request.namespace,
+    )
+
+@router.get("/{group}/{version}/{plural}/{namespace}")
+def list_namespaced_crd_items(group: str, version: str, plural: str, namespace: str):
+    """
+    List items from a namespaced CRD.
+    """
     return crd_manager.get_crd_items(group=group, version=version, plural=plural, namespace=namespace)
 
 @router.get("/{group}/{version}/{plural}/{namespace}/{name}")
-def get_crd_item(group: str, version: str, plural: str, namespace: str, name: str):
+def get_namespaced_crd_item(group: str, version: str, plural: str, namespace: str, name: str):
     """
-    Get a specific item from a CRD.
+    Get a specific item from a namespaced CRD.
     """
-    crd_manager = CRDManager()
     items = crd_manager.get_crd_items(group=group, version=version, plural=plural, namespace=namespace)
     return next((item for item in items.get("items", []) if item["metadata"]["name"] == name), None)
 
@@ -53,7 +66,7 @@ for group_name, function in crd_manager.create_dynamic_crd_functions().items():
         if "namespace" in function.__code__.co_varnames:
             # Namespaced CRD
             router.add_api_route(
-                f"/{group_name}/{{version}}/{plural}/{{namespace}}",
+                f"/{plural}/{{namespace}}",
                 function,
                 methods=["GET"],
                 name=f"List {plural}",
@@ -62,7 +75,7 @@ for group_name, function in crd_manager.create_dynamic_crd_functions().items():
         else:
             # Non-namespaced CRD
             router.add_api_route(
-                f"/{group_name}/{{version}}/{plural}",
+                f"/{plural}",
                 function,
                 methods=["GET"],
                 name=f"List {plural}",
@@ -72,7 +85,7 @@ for group_name, function in crd_manager.create_dynamic_crd_functions().items():
         if "namespace" in function.__code__.co_varnames:
             # Namespaced CRD
             router.add_api_route(
-                f"/{group_name}/{{version}}/{plural}/{{namespace}}/{{name}}",
+                f"/{plural}/{{namespace}}/{{name}}",
                 function,
                 methods=["GET"],
                 name=f"Get {plural}",
@@ -81,7 +94,7 @@ for group_name, function in crd_manager.create_dynamic_crd_functions().items():
         else:
             # Non-namespaced CRD
             router.add_api_route(
-                f"/{group_name}/{{version}}/{plural}/{{name}}",
+                f"/{plural}/{{name}}",
                 function,
                 methods=["GET"],
                 name=f"Get {plural}",
