@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from kubernetes.client.exceptions import ApiException
 from kubernetes import client, config
 from typing import List, Dict, Optional
+from models.models import ResourceType
 from base.k8s_config import load_k8s_config
 
 # Load Kubernetes Configurations
@@ -87,14 +88,15 @@ def delete_deployment(namespace: str, deployment_name: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
-def delete_resource(namespace: Optional[str], resource_name: str, resource_type: str, force: bool) -> dict:
+
+def delete_resource(namespace: Optional[str], resource_name: str, resource_type: ResourceType, force: bool) -> dict:
     """
     Delete a Kubernetes resource.
 
     Args:
         namespace (Optional[str]): The namespace of the resource (None for cluster-wide resources).
         resource_name (str): The name of the resource to delete.
-        resource_type (str): The type of the resource (e.g., Deployment, PersistentVolume).
+        resource_type (ResourceType): The type of the resource (e.g., deployment, statefulset, replicaset).
         force (bool): Whether to force deletion.
 
     Returns:
@@ -104,20 +106,40 @@ def delete_resource(namespace: Optional[str], resource_name: str, resource_type:
         HTTPException: If an error occurs during the deletion process.
     """
     try:
-        if resource_type.lower() == "persistentvolume":
+        if resource_type == ResourceType.PERSISTENTVOLUME:
             # Delete PersistentVolume (cluster-wide resource)
             response = core_v1_api.delete_persistent_volume(name=resource_name)
-        elif resource_type.lower() == "persistentvolumeclaim":
+        elif resource_type == ResourceType.PERSISTENTVOLUMECLAIM:
             # Delete PersistentVolumeClaim (namespace-scoped resource)
             response = core_v1_api.delete_namespaced_persistent_volume_claim(
                 name=resource_name, namespace=namespace
             )
-        elif resource_type.lower() == "deployment":
+        elif resource_type == ResourceType.DEPLOYMENT:
             # Delete Deployment (namespace-scoped resource)
             response = apps_v1_api.delete_namespaced_deployment(
                 name=resource_name, namespace=namespace
             )
-        elif resource_type.lower() == "namespace":
+        elif resource_type == ResourceType.STATEFULSET:
+            # Delete StatefulSet (namespace-scoped resource)
+            response = apps_v1_api.delete_namespaced_stateful_set(
+                name=resource_name, namespace=namespace
+            )
+        elif resource_type == ResourceType.REPLICASET:
+            # Delete ReplicaSet (namespace-scoped resource)
+            response = apps_v1_api.delete_namespaced_replica_set(
+                name=resource_name, namespace=namespace
+            )
+        elif resource_type == ResourceType.POD:
+            # Delete Pod (namespace-scoped resource)
+            response = core_v1_api.delete_namespaced_pod(
+                name=resource_name, namespace=namespace
+            )
+        elif resource_type == ResourceType.SERVICE:
+            # Delete Service (namespace-scoped resource)
+            response = core_v1_api.delete_namespaced_service(
+                name=resource_name, namespace=namespace
+            )
+        elif resource_type == ResourceType.NAMESPACE:
             # Delete Namespace (cluster-wide resource)
             response = core_v1_api.delete_namespace(name=resource_name)
         else:
@@ -126,15 +148,15 @@ def delete_resource(namespace: Optional[str], resource_name: str, resource_type:
                 detail=f"Unsupported resource type: {resource_type}"
             )
 
-        return {"message": f"{resource_type.capitalize()} '{resource_name}' deleted successfully."}
+        return {"message": f"{resource_type.value.capitalize()} '{resource_name}' deleted successfully."}
 
     except ApiException as e:
         raise HTTPException(
             status_code=e.status if e.status else 500,
-            detail=f"An error occurred while deleting {resource_type.capitalize()} '{resource_name}': {e.reason if e.reason else str(e)}"
+            detail=f"An error occurred while deleting {resource_type.value.capitalize()} '{resource_name}': {e.reason if e.reason else str(e)}"
         )
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"An unexpected error occurred while deleting {resource_type.capitalize()} '{resource_name}': {str(e)}"
+            detail=f"An unexpected error occurred while deleting {resource_type.value.capitalize()} '{resource_name}': {str(e)}"
         )
