@@ -87,53 +87,54 @@ def delete_deployment(namespace: str, deployment_name: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
-def delete_resource(namespace: str, resource_name: str, resource_type: str, force: bool = False):
+def delete_resource(namespace: Optional[str], resource_name: str, resource_type: str, force: bool) -> dict:
     """
-    Delete a Kubernetes resource (Deployment, StatefulSet, ReplicaSet, Pod, PersistentVolume, PersistentVolumeClaim, Namespace).
+    Delete a Kubernetes resource.
 
     Args:
-        namespace (str): The namespace of the resource (not required for PersistentVolumes or Namespaces).
+        namespace (Optional[str]): The namespace of the resource (None for cluster-wide resources).
         resource_name (str): The name of the resource to delete.
-        resource_type (str): The type of the resource (deployment, statefulset, replicaset, pod, pv, pvc, namespace).
-        force (bool): Whether to force delete the resource.
+        resource_type (str): The type of the resource (e.g., Deployment, PersistentVolume).
+        force (bool): Whether to force deletion.
 
     Returns:
-        dict: A success message and details of the deletion.
+        dict: A success message indicating the resource was deleted.
+
+    Raises:
+        HTTPException: If an error occurs during the deletion process.
     """
     try:
-        delete_options = client.V1DeleteOptions(
-            grace_period_seconds=0 if force else None,
-            propagation_policy="Foreground" if force else "Background"
-        )
-
-        resource_deletion_map = {
-            "deployment": apps_v1_api.delete_namespaced_deployment,
-            "statefulset": apps_v1_api.delete_namespaced_stateful_set,
-            "replicaset": apps_v1_api.delete_namespaced_replica_set,
-            "pod": core_v1_api.delete_namespaced_pod,
-            "pvc": core_v1_api.delete_namespaced_persistent_volume_claim,
-            "pv": core_v1_api.delete_persistent_volume,
-            "namespace": core_v1_api.delete_namespace,
-        }
-
-        if resource_type.lower() in resource_deletion_map:
-            delete_func = resource_deletion_map[resource_type.lower()]
-            response = delete_func(
-                name=resource_name,
-                namespace=namespace if resource_type.lower() not in ["pv", "namespace"] else None,
-                body=delete_options
+        if resource_type.lower() == "persistentvolume":
+            # Delete PersistentVolume (cluster-wide resource)
+            response = core_v1_api.delete_persistent_volume(name=resource_name)
+        elif resource_type.lower() == "persistentvolumeclaim":
+            # Delete PersistentVolumeClaim (namespace-scoped resource)
+            response = core_v1_api.delete_namespaced_persistent_volume_claim(
+                name=resource_name, namespace=namespace
             )
-            return {"message": f"{resource_type.capitalize()} '{resource_name}' deleted successfully", "details": response.to_dict() if hasattr(response, 'to_dict') else str(response)}
+        elif resource_type.lower() == "deployment":
+            # Delete Deployment (namespace-scoped resource)
+            response = apps_v1_api.delete_namespaced_deployment(
+                name=resource_name, namespace=namespace
+            )
+        elif resource_type.lower() == "namespace":
+            # Delete Namespace (cluster-wide resource)
+            response = core_v1_api.delete_namespace(name=resource_name)
         else:
-            print(f"Unsupported resource type: {resource_type}")
-            raise HTTPException(status_code=400, detail=f"Unsupported resource type: {resource_type}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported resource type: {resource_type}"
+            )
 
-    except client.exceptions.ApiException as e:
-        if e.status == 404:
-            raise HTTPException(status_code=404, detail=f"{resource_type.capitalize()} '{resource_name}' not found")
-        raise HTTPException(status_code=e.status, detail=f"Failed to delete {resource_type}: {e.reason}")
+        return {"message": f"{resource_type.capitalize()} '{resource_name}' deleted successfully."}
+
+    except ApiException as e:
+        raise HTTPException(
+            status_code=e.status if e.status else 500,
+            detail=f"An error occurred while deleting {resource_type.capitalize()} '{resource_name}': {e.reason if e.reason else str(e)}"
+        )
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"An unexpected error occurred while deleting {resource_type} '{resource_name}': {str(e)}"
+            detail=f"An unexpected error occurred while deleting {resource_type.capitalize()} '{resource_name}': {str(e)}"
         )
