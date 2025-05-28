@@ -143,7 +143,7 @@ class ResourceType(str, Enum):
 
 
 class DeleteResourceRequest(BaseModel):
-    namespace: str = Field(..., description="The namespace of the resource.")
+    namespace: Optional[str] = Field(..., description="The namespace of the resource.")
     resource_name: str = Field(..., description="The name of the resource to delete.")
     resource_type: ResourceType = Field(..., description="The type of the resource (e.g., deployment, statefulset, replicaset).")
     force: bool = Field(False, description="Flag to indicate if the deletion should be forced.")

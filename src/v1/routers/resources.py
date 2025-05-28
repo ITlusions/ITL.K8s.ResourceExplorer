@@ -50,7 +50,10 @@ async def delete_k8s_resource(request: DeleteResourceRequest):
     """
     try:
         result = controller_delete_resource(
-            request.namespace, request.resource_name, request.resource_type, request.force
+            request.namespace,
+            request.resource_name,
+            request.resource_type,
+            request.force
         )
         return result
     except HTTPException as e:
