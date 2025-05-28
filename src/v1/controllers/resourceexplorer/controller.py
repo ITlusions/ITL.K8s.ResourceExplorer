@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from kubernetes.client.exceptions import ApiException
 from kubernetes import client, config
 from typing import List, Dict, Optional
-from models.models import ResourceType
+from v1.models.models import ResourceType
 from base.k8s_config import load_k8s_config
 
 # Load Kubernetes Configurations
