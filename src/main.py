@@ -16,6 +16,7 @@ from v1.routers import (
     testmanager as v1_test_manager_router,
     pypi as v1_pypi_router,
     acr as v1_acr_router,
+    whoami as v1_whoami_router,
 )
 
 # Initialize logging
@@ -59,6 +60,7 @@ v1_routers = [
     (v1_crd_router.router, "Custom Resources"),
     (v1_pypi_router.router, "PyPi"),
     (v1_acr_router.router, "ACR"),
+    (v1_whoami_router.router, "Authentication and Authorization"),
 ]
 
 for router, tag in v1_routers:
