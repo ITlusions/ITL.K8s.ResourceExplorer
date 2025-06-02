@@ -3,6 +3,7 @@ import uuid
 import base64
 import logging
 import jwt
+from jwt import PyJWKClient
 from fastapi import FastAPI, HTTPException, Depends, Request, status
 from fastapi.security.api_key import APIKeyHeader
 from fastapi.security import OAuth2AuthorizationCodeBearer, OAuth2PasswordBearer
@@ -21,17 +22,12 @@ if not logger.hasHandlers():
 
 class AuthWrapper:
     def __init__(self, enable_validation: bool = True):
-        """
-        Initialize the AuthWrapper.
-
-        Args:
-            enable_validation: Whether to enable API key validation (useful for local development).
-        """
         self.app = FastAPI()
         self.API_KEY_NAME = "X-API-Key"
         self.api_key_header = APIKeyHeader(name=self.API_KEY_NAME, auto_error=False)
         self.k8s_helper = KubernetesHelper()
         self.enable_validation = enable_validation
+        self.logger = logger
         self.enable_apikey = os.getenv("ENABLE_APIKEY", "true").lower() == "true"
         self.enable_oauth2 = os.getenv("ENABLE_OAUTH2", "true").lower() == "true"
 
@@ -60,11 +56,10 @@ class AuthWrapper:
             scopes={"openid": "OpenID Connect scope"}
         )
 
-        # Keycloak public key for JWT verification
-        self.keycloak_public_key = (
-            "-----BEGIN PUBLIC KEY-----\n"
-            f"{os.getenv('KEYCLOAK_PUBLIC_KEY')}\n"
-            "-----END PUBLIC KEY-----"
+        # JWKS URL for Keycloak
+        self.jwks_url = os.getenv(
+            "KEYCLOAK_JWKS_URL",
+            "https://sts.itlusions.com/realms/itlusions/protocol/openid-connect/certs"
         )
 
     def _initialize_api_key(self) -> str:
@@ -202,6 +197,21 @@ class AuthWrapper:
                 raise
         return None
 
+    def get_keycloak_public_key(self, token: str):
+        """
+        Fetch the public key from Keycloak's JWKS endpoint and use it to verify the token.
+        """
+        try:
+            jwk_client = PyJWKClient(self.jwks_url)
+            signing_key = jwk_client.get_signing_key_from_jwt(token)
+            return signing_key.key
+        except Exception as e:
+            self.logger.error(f"Failed to fetch public key from Keycloak: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to fetch public key from Keycloak"
+            )
+
     async def validate(
         self,
         request: Request,
@@ -225,9 +235,10 @@ class AuthWrapper:
         token = await self.oauth2_scheme(request)
         if token:
             try:
+                public_key = self.get_keycloak_public_key(token)
                 decoded = jwt.decode(
                     token,
-                    key=self.keycloak_public_key,
+                    key=public_key,
                     algorithms=["RS256"],
                     audience=os.getenv("OAUTH2_CLIENT_ID")
                 )
@@ -269,7 +280,13 @@ class AuthWrapper:
         client_token = await self.oauth2_client_credentials_scheme(request)
         if client_token:
             try:
-                decoded = jwt.decode(client_token, options={"verify_signature": False})
+                public_key = self.get_keycloak_public_key(client_token)
+                decoded = jwt.decode(
+                    client_token,
+                    key=public_key,
+                    algorithms=["RS256"],
+                    audience=os.getenv("OAUTH2_CLIENT_ID")
+                )
                 resource_access = decoded.get("resource_access", {})
                 groups = []
                 for client, access in resource_access.items():
@@ -293,11 +310,17 @@ class AuthWrapper:
                     "groups": groups,
                     "resource_access": resource_access
                 }
-            except Exception as e:
-                self.logger.warning(f"Failed to decode or validate app token: {e}")
+            except jwt.ExpiredSignatureError:
+                self.logger.warning("Client token has expired.")
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Client token has expired"
+                )
+            except jwt.InvalidTokenError as e:
+                self.logger.warning(f"Invalid client token: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Invalid or malformed app token"
+                    detail="Invalid or malformed client token"
                 )
 
         self.logger.warning("Authentication failed: No valid API key or OAuth2 token.")
