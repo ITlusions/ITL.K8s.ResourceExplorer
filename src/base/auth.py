@@ -206,11 +206,12 @@ class AuthWrapper:
         token: Optional[str] = Depends(lambda: None),
         client_token: Optional[str] = Depends(lambda: None),
         required_group: Optional[str] = None,
+        required_resource: Optional[str] = None,  # <-- Add this parameter
     ) -> Union[dict, str]:
         """
         Accepts a valid API key, a valid OAuth2 user token, or a valid OAuth2 client credentials token.
         Returns user info or API key info if valid, else raises HTTPException.
-        Enforces group membership if required_group is set.
+        Enforces group membership and resource access if required.
         """
         # Try API key
         if api_key and api_key == self.API_KEY:
@@ -223,6 +224,13 @@ class AuthWrapper:
             try:
                 decoded = jwt.decode(token, options={"verify_signature": False})
                 groups = decoded.get("groups", [])
+                resource_access = decoded.get("resource_access", {})
+                if required_resource and required_resource != "*" and required_resource not in resource_access:
+                    self.logger.warning(f"User does not have access to resource: {required_resource}")
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=f"User does not have access to resource '{required_resource}'"
+                    )
                 if required_group and required_group not in groups:
                     self.logger.warning(f"User not in required group: {required_group}")
                     raise HTTPException(
@@ -230,7 +238,12 @@ class AuthWrapper:
                         detail=f"User must be a member of group '{required_group}'"
                     )
                 self.logger.info("Authenticated using OAuth2 user token.")
-                return {"auth_type": "oauth2_user", "access_token": token, "groups": groups}
+                return {
+                    "auth_type": "oauth2_user",
+                    "access_token": token,
+                    "groups": groups,
+                    "resource_access": resource_access
+                }
             except Exception as e:
                 self.logger.warning(f"Failed to decode or validate user token: {e}")
                 raise HTTPException(
@@ -243,11 +256,16 @@ class AuthWrapper:
         if client_token:
             try:
                 decoded = jwt.decode(client_token, options={"verify_signature": False})
-                # Keycloak may put client roles in 'resource_access' or 'client_roles'
-                groups = []
                 resource_access = decoded.get("resource_access", {})
+                groups = []
                 for client, access in resource_access.items():
                     groups.extend(access.get("roles", []))
+                if required_resource and required_resource != "*" and required_resource not in resource_access:
+                    self.logger.warning(f"App does not have access to resource: {required_resource}")
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=f"App does not have access to resource '{required_resource}'"
+                    )
                 if required_group and required_group not in groups:
                     self.logger.warning(f"App not in required group: {required_group}")
                     raise HTTPException(
@@ -255,7 +273,12 @@ class AuthWrapper:
                         detail=f"App must be a member of group '{required_group}'"
                     )
                 self.logger.info("Authenticated using OAuth2 client credentials token.")
-                return {"auth_type": "oauth2_app", "access_token": client_token, "groups": groups}
+                return {
+                    "auth_type": "oauth2_app",
+                    "access_token": client_token,
+                    "groups": groups,
+                    "resource_access": resource_access
+                }
             except Exception as e:
                 self.logger.warning(f"Failed to decode or validate app token: {e}")
                 raise HTTPException(
