@@ -15,3 +15,5 @@ azure-containerregistry
 msal
 python-jose
 websockets
+PyJWT
+httpx

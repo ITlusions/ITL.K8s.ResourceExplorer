@@ -2,7 +2,7 @@ import os
 import uuid
 import base64
 import logging
-import jwt  # Add at the top if not already imported
+import jwt
 from fastapi import FastAPI, HTTPException, Depends, Request, status
 from fastapi.security.api_key import APIKeyHeader
 from fastapi.security import OAuth2AuthorizationCodeBearer, OAuth2PasswordBearer
@@ -12,12 +12,12 @@ from typing import Optional, Union
 
 # Configure logging for this module
 logger = logging.getLogger("AuthWrapper")
-if not logger.hasHandlers():  # Prevent duplicate handlers if logging is already configured
+if not logger.hasHandlers():
     handler = logging.StreamHandler()
     formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
-    logger.setLevel(logging.INFO)  # Set the desired logging level (DEBUG, INFO, etc.)
+    logger.setLevel(logging.INFO)
 
 class AuthWrapper:
     def __init__(self, enable_validation: bool = True):
@@ -34,23 +34,19 @@ class AuthWrapper:
         self.enable_validation = enable_validation
         self.enable_apikey = os.getenv("ENABLE_APIKEY", "true").lower() == "true"
         self.enable_oauth2 = os.getenv("ENABLE_OAUTH2", "true").lower() == "true"
-        self.enable_validation = enable_validation
-
-        # Use the module-level logger
-        self.logger = logger
 
         # Initialize API key
         self.API_KEY = self._initialize_api_key()
 
-        # OAuth2 Authorization Code flow config for Keycloak at sts.itlusions.com
+        # OAuth2 Authorization Code flow config for Keycloak
         self.oauth2_scheme = OAuth2AuthorizationCodeBearer(
             authorizationUrl=os.getenv(
-            "OAUTH2_AUTH_URL",
-            "https://sts.itlusions.com/realms/itlusions/protocol/openid-connect/auth"
+                "OAUTH2_AUTH_URL",
+                "https://sts.itlusions.com/realms/itlusions/protocol/openid-connect/auth"
             ),
             tokenUrl=os.getenv(
-            "OAUTH2_TOKEN_URL",
-            "https://sts.itlusions.com/realms/itlusions/protocol/openid-connect/token"
+                "OAUTH2_TOKEN_URL",
+                "https://sts.itlusions.com/realms/itlusions/protocol/openid-connect/token"
             ),
             scopes={"openid": "OpenID Connect scope"}
         )
@@ -62,6 +58,13 @@ class AuthWrapper:
                 "https://sts.itlusions.com/realms/itlusions/protocol/openid-connect/token"
             ),
             scopes={"openid": "OpenID Connect scope"}
+        )
+
+        # Keycloak public key for JWT verification
+        self.keycloak_public_key = (
+            "-----BEGIN PUBLIC KEY-----\n"
+            f"{os.getenv('KEYCLOAK_PUBLIC_KEY')}\n"
+            "-----END PUBLIC KEY-----"
         )
 
     def _initialize_api_key(self) -> str:
@@ -206,7 +209,7 @@ class AuthWrapper:
         token: Optional[str] = Depends(lambda: None),
         client_token: Optional[str] = Depends(lambda: None),
         required_group: Optional[str] = None,
-        required_resource: Optional[str] = None,  # <-- Add this parameter
+        required_resource: Optional[str] = None,
     ) -> Union[dict, str]:
         """
         Accepts a valid API key, a valid OAuth2 user token, or a valid OAuth2 client credentials token.
@@ -222,7 +225,12 @@ class AuthWrapper:
         token = await self.oauth2_scheme(request)
         if token:
             try:
-                decoded = jwt.decode(token, options={"verify_signature": False})
+                decoded = jwt.decode(
+                    token,
+                    key=self.keycloak_public_key,
+                    algorithms=["RS256"],
+                    audience=os.getenv("OAUTH2_CLIENT_ID")
+                )
                 groups = decoded.get("groups", [])
                 resource_access = decoded.get("resource_access", {})
                 if required_resource and required_resource != "*" and required_resource not in resource_access:
@@ -244,8 +252,14 @@ class AuthWrapper:
                     "groups": groups,
                     "resource_access": resource_access
                 }
-            except Exception as e:
-                self.logger.warning(f"Failed to decode or validate user token: {e}")
+            except jwt.ExpiredSignatureError:
+                self.logger.warning("Token has expired.")
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Token has expired"
+                )
+            except jwt.InvalidTokenError as e:
+                self.logger.warning(f"Invalid token: {e}")
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Invalid or malformed user token"
