@@ -4,6 +4,8 @@ import yaml
 import os
 from datetime import datetime
 from fastapi import HTTPException, WebSocket
+from kubernetes import client
+from fastapi import HTTPException
 from kubernetes import client, watch, config, stream
 from kubernetes.client.exceptions import ApiException
 from base.k8s_config import load_k8s_config
@@ -667,9 +669,6 @@ async def rollout_restart_deployment(namespace: str, deployment_name: str) -> di
             detail=f"An unexpected error occurred: {str(e)}",
             headers={"X-Debug-Info": error_details}
         )
-
-from kubernetes import client
-from fastapi import HTTPException
 
 def create_cleanup_evicted_pods_job(namespace: str = "default", job_name: str = "cleanup-evicted-pods"):
     """

@@ -25,23 +25,22 @@ k8s_resources_router = APIRouter(
 @k8s_resources_router.post("/generate-kubeconfig", response_model=KubeconfigResponse)
 async def create_kubeconfig(request: KubeconfigRequest):
     """
-    API endpoint to generate a kubeconfig for a service account and return it as a dictionary.
+    API endpoint to generate a kubeconfig file for a service account.
 
     Args:
         request (KubeconfigRequest): The request body containing service account details.
 
     Returns:
-        KubeconfigResponse: A success message and the kubeconfig as a dictionary.
+        dict: The generated kubeconfig as a dictionary.
     """
     try:
-        kubeconfig_dict = await generate_kubeconfig_as_dict(
+        kubeconfig = await generate_kubeconfig_as_dict(
             service_account_name=request.service_account_name,
             namespace=request.namespace,
         )
-        return KubeconfigResponse(
+        return dict(
             message="Kubeconfig generated successfully.",
-            kubeconfig_path=None,
-            kubeconfig=kubeconfig_dict,
+            kubeconfig=kubeconfig,
         )
     except HTTPException as e:
         raise e
@@ -341,7 +340,7 @@ async def restart_deployment(namespace: str, deployment_name: str):
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
+    
 @k8s_resources_router.post("/{namespace}/cleanup-evicted-pods", response_model=dict)
 async def cleanup_evicted_pods(namespace: str):
     """
