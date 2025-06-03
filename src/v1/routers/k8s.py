@@ -12,7 +12,8 @@ from v1.controllers.k8s import (
     interactive_exec,
     get_in_cluster_config,
     list_pvcs, list_pvs, generate_kubeconfig, list_service_accounts_and_kubeconfigs,
-    rollout_restart_deployment
+    rollout_restart_deployment,
+    create_cleanup_evicted_pods_job
 )
 from utils.auth import validate_token
 from typing import Optional
@@ -24,23 +25,23 @@ k8s_resources_router = APIRouter(
 @k8s_resources_router.post("/generate-kubeconfig", response_model=KubeconfigResponse)
 async def create_kubeconfig(request: KubeconfigRequest):
     """
-    API endpoint to generate a kubeconfig file for a service account.
+    API endpoint to generate a kubeconfig for a service account and return it as a dictionary.
 
     Args:
         request (KubeconfigRequest): The request body containing service account details.
 
     Returns:
-        KubeconfigResponse: A success message and the path to the generated kubeconfig file.
+        KubeconfigResponse: A success message and the kubeconfig as a dictionary.
     """
     try:
-        kubeconfig_path = await generate_kubeconfig(
+        kubeconfig_dict = await generate_kubeconfig_as_dict(
             service_account_name=request.service_account_name,
             namespace=request.namespace,
-            output_file=request.output_file,
         )
         return KubeconfigResponse(
             message="Kubeconfig generated successfully.",
-            kubeconfig_path=kubeconfig_path,
+            kubeconfig_path=None,
+            kubeconfig=kubeconfig_dict,
         )
     except HTTPException as e:
         raise e
@@ -222,6 +223,7 @@ async def get_k8s_storage_class(storage_class_name: str):
     """
     try:
         from v1.controllers.k8s import get_storage_class
+from v1.controllers.k8s import generate_kubeconfig_as_dict
         return await get_storage_class(storage_class_name)
     except HTTPException as e:
         raise e
@@ -335,6 +337,18 @@ async def restart_deployment(namespace: str, deployment_name: str):
     """
     try:
         return await rollout_restart_deployment(namespace, deployment_name)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@k8s_resources_router.post("/{namespace}/cleanup-evicted-pods", response_model=dict)
+async def cleanup_evicted_pods(namespace: str):
+    """
+    Create a Kubernetes Job to delete all evicted pods in the given namespace.
+    """
+    try:
+        return create_cleanup_evicted_pods_job(namespace)
     except HTTPException as e:
         raise e
     except Exception as e:
