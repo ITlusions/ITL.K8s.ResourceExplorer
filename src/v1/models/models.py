@@ -175,3 +175,15 @@ class KubeconfigRequest(BaseModel):
 class KubeconfigResponse(BaseModel):
     message: str = Field(..., description="A success message.")
     kubeconfig_path: str = Field(..., description="The path to the generated kubeconfig file.")
+
+from typing import Dict
+from pydantic import BaseModel, Field
+
+class SecretRequest(BaseModel):
+    namespace: str = Field(..., description="The namespace of the secret.")
+    secret_name: str = Field(..., description="The name of the secret.")
+
+class SecretResponse(BaseModel):
+    name: str = Field(..., description="The name of the secret.")
+    namespace: str = Field(..., description="The namespace of the secret.")
+    data: Dict[str, str] = Field(..., description="The decoded data of the secret (base64-decoded).")

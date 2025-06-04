@@ -716,3 +716,23 @@ def create_cleanup_evicted_pods_job(namespace: str = "default", job_name: str = 
     except client.exceptions.ApiException as e:
         raise HTTPException(status_code=e.status, detail=f"Failed to create cleanup job: {e.reason}")
 
+def get_secret(namespace: str, secret_name: str) -> dict:
+    """
+    Retrieve a Kubernetes Secret and return its decoded values.
+    """
+    try:
+        v1 = client.CoreV1Api()
+        secret = v1.read_namespaced_secret(secret_name, namespace)
+        decoded_data = {}
+        for key, value in secret.data.items():
+            decoded_data[key] = base64.b64decode(value).decode("utf-8")
+        return {
+            "name": secret.metadata.name,
+            "namespace": secret.metadata.namespace,
+            "data": decoded_data
+        }
+    except client.exceptions.ApiException as e:
+        raise HTTPException(status_code=e.status, detail=f"Failed to get secret: {e.reason}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+
