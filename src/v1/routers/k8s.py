@@ -223,7 +223,6 @@ async def get_k8s_storage_class(storage_class_name: str):
     """
     try:
         from v1.controllers.k8s import get_storage_class
-from v1.controllers.k8s import generate_kubeconfig_as_dict
         return await get_storage_class(storage_class_name)
     except HTTPException as e:
         raise e
