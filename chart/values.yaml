@@ -1,4 +1,4 @@
-replicaCount: 1
+replicaCount: 2
 
 image:
   repository: docker.io/nweistra/itlk8sre
@@ -86,9 +86,9 @@ readinessProbe:
   periodSeconds: 15
 
 autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 1
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
   targetCPUUtilizationPercentage: 80
 
 volumeMounts: []
