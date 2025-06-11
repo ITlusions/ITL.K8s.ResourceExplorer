@@ -16,7 +16,7 @@ data:
     # If only one callback URL:
     redirect_url = "https://resources.dev.itlusions.nl/oauth2/callback"
     # If you have multiple valid callback URLs, oauth2-proxy >=7.2.0 supports extra_redirect_urls:
-    extra_redirect_urls = ["https://resources.dev.itlusions.com/oauth2/callback"]
+    #extra_redirect_urls = ["https://resources.dev.itlusions.com/oauth2/callback"]
 
     # Restrict by email domain (optional—remove or set ["*"] if you allow all)
     email_domains = ["itlusions.com"]
