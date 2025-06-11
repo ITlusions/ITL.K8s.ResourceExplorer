@@ -1,4 +1,4 @@
-replicaCount: 2
+replicaCount: 1
 
 oauth2-proxy:
   global: {}
@@ -47,7 +47,9 @@ oauth2-proxy:
       #  - group1@example.com
       #  - group2@example.com
     # Default configuration, to be overridden
-    configFile: ""
+    configFile: |-
+      email_domains = [ "*" ]
+      upstreams = [ "file:///dev/null" ]
     # Custom configuration file: oauth2_proxy.cfg
     # configFile: |-
     #   pass_basic_auth = false
@@ -576,13 +578,13 @@ ingress:
         - resources.dev.itlusions.nl
         - resources.dev.itlusions.com
 
-resources:
-  limits:
-    cpu: 250m
-    memory: 256Mi
-  requests:
-    cpu: 100m
-    memory: 128Mi
+  resources:
+    limits:
+      cpu: 250m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
 
 livenessProbe:
   httpGet:
@@ -597,9 +599,9 @@ readinessProbe:
   periodSeconds: 15
 
 autoscaling:
-  enabled: true
+  enabled: false
   minReplicas: 1
-  maxReplicas: 6
+  maxReplicas: 1
   targetCPUUtilizationPercentage: 80
 
 volumeMounts: []
