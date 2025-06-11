@@ -4,3 +4,7 @@ description: ITlusions Kubernetes Resource Explorer Service
 type: application
 version: 0.2.0
 appVersion: "latest"
+dependencies:
+  - name: oauth2-proxy
+    version: "7.12.18"
+    repository: "https://oauth2-proxy.github.io/manifests"
