@@ -10,6 +10,9 @@ data:
     # Use Keycloak OIDC provider
     provider = "keycloak-oidc"
 
+    # email domain to allow
+    email_domains = [ "itlusions.com", "itlusions.nl" ]
+
     # OIDC Issuer URL for realm "itlusions" on sts.itlusions.com
     oidc_issuer_url = "https://sts.itlusions.com/realms/itlusions"
     upstreams = ["http://{{ include "itl.common.fullname" . }}:{{ .Values.service.port }}"]
