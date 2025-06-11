@@ -4,7 +4,7 @@ metadata:
   name: oauth2-proxy-config
   namespace: {{ .Release.Namespace }}
 data:
-  config: |
+  oauth2_proxy.cfg: |
     # Use Keycloak OIDC provider
     provider = "keycloak-oidc"
 
