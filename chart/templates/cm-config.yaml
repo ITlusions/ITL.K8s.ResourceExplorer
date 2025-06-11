@@ -5,4 +5,3 @@ metadata:
   namespace: {{ .Release.Namespace }}
 data:
   ENABLE_MASKING: "true"
-  UPSTREAM_URL: ""
