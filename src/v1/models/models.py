@@ -171,9 +171,19 @@ class PersistentVolume(BaseModel):
 class KubeconfigRequest(BaseModel):
     service_account_name: str = Field(..., description="The name of the service account.")
     namespace: str = Field(..., description="The namespace where the service account is located.")
-    output_file: str = Field("kubeconfig.yaml", description="The file path to save the generated kubeconfig.")
-
 
 class KubeconfigResponse(BaseModel):
     message: str = Field(..., description="A success message.")
     kubeconfig_path: str = Field(..., description="The path to the generated kubeconfig file.")
+
+from typing import Dict
+from pydantic import BaseModel, Field
+
+class SecretRequest(BaseModel):
+    namespace: str = Field(..., description="The namespace of the secret.")
+    secret_name: str = Field(..., description="The name of the secret.")
+
+class SecretResponse(BaseModel):
+    name: str = Field(..., description="The name of the secret.")
+    namespace: str = Field(..., description="The namespace of the secret.")
+    data: Dict[str, str] = Field(..., description="The decoded data of the secret (base64-decoded).")

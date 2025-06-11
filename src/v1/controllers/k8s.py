@@ -4,6 +4,8 @@ import yaml
 import os
 from datetime import datetime
 from fastapi import HTTPException, WebSocket
+from kubernetes import client
+from fastapi import HTTPException
 from kubernetes import client, watch, config, stream
 from kubernetes.client.exceptions import ApiException
 from base.k8s_config import load_k8s_config
@@ -667,4 +669,70 @@ async def rollout_restart_deployment(namespace: str, deployment_name: str) -> di
             detail=f"An unexpected error occurred: {str(e)}",
             headers={"X-Debug-Info": error_details}
         )
+
+def create_cleanup_evicted_pods_job(namespace: str = "default", job_name: str = "cleanup-evicted-pods"):
+    """
+    Create a Kubernetes Job that deletes all evicted pods in the given namespace.
+    """
+    batch_v1 = client.BatchV1Api()
+    # Get the service account name attached to the current pod (the API)
+    service_account_name = os.environ.get("KUBERNETES_SERVICEACCOUNT", None)
+    if not service_account_name:
+        # Fallback to the default path used by Kubernetes for service account
+        try:
+            with open("/var/run/secrets/kubernetes.io/serviceaccount/namespace", "r") as f:
+                service_account_name = os.environ.get("KUBERNETES_SERVICE_ACCOUNT", "default")
+        except Exception:
+            service_account_name = "default"
+
+    job_manifest = {
+        "apiVersion": "batch/v1",
+        "kind": "Job",
+        "metadata": {"name": job_name, "namespace": namespace},
+        "spec": {
+            "template": {
+                "metadata": {"name": job_name},
+                "spec": {
+                    "restartPolicy": "Never",
+                    "containers": [
+                        {
+                            "name": "cleanup-evicted-pods",
+                            "image": "bitnami/kubectl:latest",
+                            "command": [
+                                "sh",
+                                "-c",
+                                "kubectl get pods --field-selector=status.phase=Failed -o name | grep Evicted | xargs -r kubectl delete"
+                            ],
+                        }
+                    ],
+                    "serviceAccountName": service_account_name,
+                },
+            }
+        },
+    }
+    try:
+        batch_v1.create_namespaced_job(namespace=namespace, body=job_manifest)
+        return {"message": f"Cleanup job '{job_name}' created in namespace '{namespace}'."}
+    except client.exceptions.ApiException as e:
+        raise HTTPException(status_code=e.status, detail=f"Failed to create cleanup job: {e.reason}")
+
+def get_secret(namespace: str, secret_name: str) -> dict:
+    """
+    Retrieve a Kubernetes Secret and return its decoded values.
+    """
+    try:
+        v1 = client.CoreV1Api()
+        secret = v1.read_namespaced_secret(secret_name, namespace)
+        decoded_data = {}
+        for key, value in secret.data.items():
+            decoded_data[key] = base64.b64decode(value).decode("utf-8")
+        return {
+            "name": secret.metadata.name,
+            "namespace": secret.metadata.namespace,
+            "data": decoded_data
+        }
+    except client.exceptions.ApiException as e:
+        raise HTTPException(status_code=e.status, detail=f"Failed to get secret: {e.reason}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 

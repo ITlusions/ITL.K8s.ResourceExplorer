@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, WebSocket, Query, Depends
 from fastapi.responses import JSONResponse
 from kubernetes.client.exceptions import ApiException
-from v1.models.models import ResourceDetail, NotFoundResponse, StorageClass, PersistentVolumeClaim, PersistentVolume, KubeconfigResponse, KubeconfigRequest
+from v1.models.models import ResourceDetail, NotFoundResponse, StorageClass, PersistentVolumeClaim, PersistentVolume, KubeconfigResponse, KubeconfigRequest, SecretRequest, SecretResponse
 from v1.controllers.k8s import (
     get_all_resource_types as controller_get_all_resource_types,
     describe_resource as controller_describe_resource,
@@ -12,7 +12,9 @@ from v1.controllers.k8s import (
     interactive_exec,
     get_in_cluster_config,
     list_pvcs, list_pvs, generate_kubeconfig, list_service_accounts_and_kubeconfigs,
-    rollout_restart_deployment
+    rollout_restart_deployment,
+    create_cleanup_evicted_pods_job,
+    get_secret
 )
 from utils.auth import validate_token
 from typing import Optional
@@ -30,17 +32,16 @@ async def create_kubeconfig(request: KubeconfigRequest):
         request (KubeconfigRequest): The request body containing service account details.
 
     Returns:
-        KubeconfigResponse: A success message and the path to the generated kubeconfig file.
+        dict: The generated kubeconfig as a dictionary.
     """
     try:
-        kubeconfig_path = await generate_kubeconfig(
+        kubeconfig = await generate_kubeconfig_as_dict(
             service_account_name=request.service_account_name,
             namespace=request.namespace,
-            output_file=request.output_file,
         )
-        return KubeconfigResponse(
+        return dict(
             message="Kubeconfig generated successfully.",
-            kubeconfig_path=kubeconfig_path,
+            kubeconfig=kubeconfig,
         )
     except HTTPException as e:
         raise e
@@ -339,3 +340,22 @@ async def restart_deployment(namespace: str, deployment_name: str):
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@k8s_resources_router.post("/{namespace}/cleanup-evicted-pods", response_model=dict)
+async def cleanup_evicted_pods(namespace: str):
+    """
+    Create a Kubernetes Job to delete all evicted pods in the given namespace.
+    """
+    try:
+        return create_cleanup_evicted_pods_job(namespace)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@k8s_resources_router.post("/get-secret", response_model=SecretResponse)
+async def get_secret_endpoint(request: SecretRequest):
+    """
+    Retrieve a Kubernetes Secret and its decoded values.
+    """
+    return get_secret(request.namespace, request.secret_name)
