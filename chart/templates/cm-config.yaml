@@ -5,55 +5,55 @@ metadata:
   namespace: {{ .Release.Namespace }}
 data:
   ENABLE_MASKING: "true"
-  UPSTREAM_URL: "http://{{ include "itl.common.fullname" . }}:{{ .Values.service.port }}"
-configmap.yaml: |
-  # Use Keycloak OIDC provider
-  provider = "keycloak-oidc"
+  UPSTREAM_URL: ""
+  config: |
+    # Use Keycloak OIDC provider
+    provider = "keycloak-oidc"
 
-  # OIDC Issuer URL for realm "itlusions" on sts.itlusions.com
-  oidc_issuer_url = "https://sts.itlusions.com/realms/itlusions"
+    # OIDC Issuer URL for realm "itlusions" on sts.itlusions.com
+    oidc_issuer_url = "https://sts.itlusions.com/realms/itlusions"
 
-  # The callback URL(s) must exactly match what you configured under "Valid Redirect URIs" in Keycloak.
-  # Here are two examples; pick the one(s) matching your ingress.
-  # If only one callback URL:
-  redirect_url = "https://resources.dev.itlusions.nl/oauth2/callback"
-  # If you have multiple valid callback URLs, oauth2-proxy >=7.2.0 supports extra_redirect_urls:
-  extra_redirect_urls = ["https://resources.dev.itlusions.com/oauth2/callback"]
+    # The callback URL(s) must exactly match what you configured under "Valid Redirect URIs" in Keycloak.
+    # Here are two examples; pick the one(s) matching your ingress.
+    # If only one callback URL:
+    redirect_url = "https://resources.dev.itlusions.nl/oauth2/callback"
+    # If you have multiple valid callback URLs, oauth2-proxy >=7.2.0 supports extra_redirect_urls:
+    extra_redirect_urls = ["https://resources.dev.itlusions.com/oauth2/callback"]
 
-  # Restrict by email domain (optional—remove or set ["*"] if you allow all)
-  email_domains = ["itlusions.com"]
+    # Restrict by email domain (optional—remove or set ["*"] if you allow all)
+    email_domains = ["itlusions.com"]
 
-  # Upstream(s): where oauth2-proxy should forward requests after authentication.
-  # Replace "resources" and port with your in-cluster service name and port.
-  upstreams = ["http://resources:8000/"]
+    # Upstream(s): where oauth2-proxy should forward requests after authentication.
+    # Replace "resources" and port with your in-cluster service name and port.
+    upstreams = ["http://{{ include "itl.common.fullname" . }}:{{ .Values.service.port }}"]
 
-  # (Optional) If you configured a "groups" mapper in Keycloak:
-  oidc_groups_claim = "groups"
-  # Only allow users in these Keycloak group(s). Replace with your actual group names.
-  allowed_groups = ["developers"]
+    # (Optional) If you configured a "groups" mapper in Keycloak:
+    oidc_groups_claim = "groups"
+    # Only allow users in these Keycloak group(s). Replace with your actual group names.
+    allowed_groups = ["developers"]
 
-  # (Optional) If you want to restrict by roles:
-  # For realm role "admin":
-  # allowed_roles = ["admin"]
-  # For client role "editor" in client "oauth2-proxy":
-  # allowed_roles = ["oauth2-proxy:editor"]
+    # (Optional) If you want to restrict by roles:
+    # For realm role "admin":
+    # allowed_roles = ["admin"]
+    # For client role "editor" in client "oauth2-proxy":
+    # allowed_roles = ["oauth2-proxy:editor"]
 
-  # Cookie settings (adjust per your security needs):
-  cookie_secure = true
-  cookie_samesite = "lax"
-  # Other possible cookie settings:
-  # cookie_domain = "your-domain.com"
-  # cookie_path = "/"
+    # Cookie settings (adjust per your security needs):
+    cookie_secure = true
+    cookie_samesite = "lax"
+    # Other possible cookie settings:
+    # cookie_domain = "your-domain.com"
+    # cookie_path = "/"
 
-  # Pass-through settings:
-  pass_basic_auth = false
-  pass_access_token = true
+    # Pass-through settings:
+    pass_basic_auth = false
+    pass_access_token = true
 
-  # Scopes: by default oauth2-proxy uses "openid email profile". If you need extra scopes:
-  # scope = "openid email profile"
+    # Scopes: by default oauth2-proxy uses "openid email profile". If you need extra scopes:
+    # scope = "openid email profile"
 
-  # Logging / session settings, if desired:
-  # session_refresh = "1h"
-  # session_cookie_name = "_oauth2_proxy"
+    # Logging / session settings, if desired:
+    # session_refresh = "1h"
+    # session_cookie_name = "_oauth2_proxy"
 
-  # (Optional) adjust other oauth2-proxy flags here as needed.
+    # (Optional) adjust other oauth2-proxy flags here as needed.
