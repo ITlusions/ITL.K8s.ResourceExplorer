@@ -1,3 +1,5 @@
+
+
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -5,8 +7,40 @@ metadata:
   namespace: {{ .Release.Namespace }}
 data:
   oauth2_proxy.cfg: |-
+    # Use Keycloak OIDC provider
     provider = "keycloak-oidc"
+
+    # OIDC Issuer URL for realm "itlusions" on sts.itlusions.com
     oidc_issuer_url = "https://sts.itlusions.com/realms/itlusions"
-    upstreams = [ "http://{{ include "itl.common.fullname" . }}:{{ .Values.service.port }}" ]
+    upstreams = ["http://{{ include "itl.common.fullname" . }}:{{ .Values.service.port }}"]
+
+    # (Optional) If you configured a "groups" mapper in Keycloak:
+    oidc_groups_claim = "groups"
+    # Only allow users in these Keycloak group(s). Replace with your actual group names.
+    # allowed_groups = ["developers"]
+
+    # (Optional) If you want to restrict by roles:
+    # For realm role "admin":
+    # allowed_roles = ["admin"]
+    # For client role "editor" in client "oauth2-proxy":
+    # allowed_roles = ["oauth2-proxy:editor"]
+
+    # Cookie settings (adjust per your security needs):
+    cookie_secure = true
+    cookie_samesite = "lax"
+    # Other possible cookie settings:
+    # cookie_domain = "your-domain.com"
+    # cookie_path = "/"
+
+    # Pass-through settings:
     pass_basic_auth = false
     pass_access_token = true
+
+    # Scopes: by default oauth2-proxy uses "openid email profile". If you need extra scopes:
+    # scope = "openid email profile"
+
+    # Logging / session settings, if desired:
+    # session_refresh = "1h"
+    # session_cookie_name = "_oauth2_proxy"
+
+    # (Optional) adjust other oauth2-proxy flags here as needed.
