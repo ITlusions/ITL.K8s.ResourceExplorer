@@ -15,8 +15,6 @@ data:
     # Here are two examples; pick the one(s) matching your ingress.
     # If only one callback URL:
     redirect_url = "https://resources.dev.itlusions.nl/oauth2/callback"
-    
-    # extra_redirect_urls = ["https://resources.dev.itlusions.com/oauth2/callback"]
 
     # Restrict by email domain (optional—remove or set ["*"] if you allow all)
     email_domains = ["itlusions.com"]
