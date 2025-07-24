@@ -20,7 +20,7 @@ from v1.routers import (
 )
 
 # Initialize logging
-logger = LoggerConfigurator()
+logger = LoggerConfigurator(log_level=logging.DEBUG)
 
 logger.configure_logging()
 logger.log_message(logging.INFO,"Logging has been configured successfully.")
