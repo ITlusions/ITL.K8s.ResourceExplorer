@@ -7,7 +7,7 @@ class LoggerConfigurator:
     A class to configure logging for the application.
     """
 
-    def __init__(self, level: int = logging.INFO, format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"):
+    def __init__(self, level: int = logging.DEBUG, format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"):
         """
         Initializes the LoggerConfigurator with default logging level and format.
 
