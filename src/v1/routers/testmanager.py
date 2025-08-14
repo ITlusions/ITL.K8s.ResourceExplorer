@@ -9,12 +9,16 @@ def get_test_manager() -> TestManagerInterface:
     return TestManager()
 
 @router.get("/smtp", response_model=dict)
-async def test_smtp(host: str, test_manager: TestManagerInterface = Depends(get_test_manager)):
+async def test_smtp(
+    host: str,
+    use_starttls: bool = False,
+    test_manager: TestManagerInterface = Depends(get_test_manager)
+):
     """
     API endpoint to test SMTP connectivity.
     """
     try:
-        result = await test_manager.test_smtp(host)
+        result = await test_manager.test_smtp(host, use_starttls=use_starttls)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
