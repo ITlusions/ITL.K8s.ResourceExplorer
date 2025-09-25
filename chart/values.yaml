@@ -550,6 +550,14 @@ securityContext: {}
 service:
   type: ClusterIP
   port: 80
+  # Metrics configuration
+  metrics:
+    enabled: true
+    port: 8000  # Same port as the main application since we expose /metrics on the same port
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8000"
+      prometheus.io/path: "/metrics"
 
 ingress:
   enabled: true

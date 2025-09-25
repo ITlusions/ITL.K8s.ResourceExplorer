@@ -7,6 +7,16 @@ from base.routers import router as base_router
 from base.logging import LoggerConfigurator
 import logging
 
+# Import metrics components (with fallback if not available)
+try:
+    from base.middleware import PrometheusMiddleware
+    from base.metrics_router import router as metrics_router
+    METRICS_AVAILABLE = True
+except ImportError:
+    METRICS_AVAILABLE = False
+    PrometheusMiddleware = None
+    metrics_router = None
+
 from v1.routers import (
     k8s as v1_k8s_resources_router,
     resources as v1_resources_router,
@@ -49,8 +59,19 @@ print("FastAPI applications initialized.")
 app = FastAPI(root_path=root_path, openapi_url=openapi_url)
 app_v1 = FastAPI(root_path=f"{root_path}/v1", openapi_url=f"{root_path}/openapi.json")
 
+# Add Prometheus middleware if available
+if METRICS_AVAILABLE and PrometheusMiddleware:
+    app.add_middleware(PrometheusMiddleware, app_name="k8s-resource-explorer")
+    app_v1.add_middleware(PrometheusMiddleware, app_name="k8s-resource-explorer-v1")
+    print("Prometheus middleware added successfully.")
+
 # Include routers
 app.include_router(base_router, tags=["Health"])
+
+# Add metrics router if available
+if METRICS_AVAILABLE and metrics_router:
+    app.include_router(metrics_router, tags=["Metrics"])
+    print("Metrics router added successfully.")
 v1_routers = [
     (v1_resources_router.router, "Simple Resources"),
     (v1_k8s_resources_router.k8s_resources_router, "K8s Resources"),

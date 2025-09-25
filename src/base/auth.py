@@ -11,6 +11,14 @@ from kubernetes import client, config
 from base.helpers import KubernetesHelper
 from typing import Optional, Union
 
+# Import metrics (with fallback if not available)
+try:
+    from base.metrics import metrics
+    METRICS_AVAILABLE = True
+except ImportError:
+    METRICS_AVAILABLE = False
+    metrics = None
+
 # Configure logging for this module
 logger = logging.getLogger("AuthWrapper")
 if not logger.hasHandlers():
@@ -150,13 +158,19 @@ class AuthWrapper:
         """
         if not self.enable_validation:
             self.logger.info("API key validation is disabled.")
+            if METRICS_AVAILABLE and metrics:
+                metrics.record_auth_attempt("success")
             return api_key
 
         if api_key != self.API_KEY:
             self.logger.warning("Invalid API key provided.")
+            if METRICS_AVAILABLE and metrics:
+                metrics.record_auth_attempt("invalid_key")
             raise HTTPException(status_code=403, detail="Invalid API Key")
 
         self.logger.info("API key validated successfully.")
+        if METRICS_AVAILABLE and metrics:
+            metrics.record_auth_attempt("success")
         return api_key
     
     def extract_api_key_data(self, api_key: str, strict: bool = False) -> Optional[dict]:
@@ -229,6 +243,8 @@ class AuthWrapper:
         # Try API key
         if api_key and api_key == self.API_KEY:
             self.logger.info("Authenticated using API key.")
+            if METRICS_AVAILABLE and metrics:
+                metrics.record_auth_attempt("success")
             return {"auth_type": "api_key"}
 
         # Try OAuth2 Authorization Code flow (user)
@@ -324,6 +340,8 @@ class AuthWrapper:
                 )
 
         self.logger.warning("Authentication failed: No valid API key or OAuth2 token.")
+        if METRICS_AVAILABLE and metrics:
+            metrics.record_auth_attempt("failure")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authenticated (API key or OAuth2 token required)",

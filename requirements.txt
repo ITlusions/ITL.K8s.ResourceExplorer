@@ -17,3 +17,5 @@ python-jose
 websockets
 PyJWT
 httpx
+prometheus-client
+psutil

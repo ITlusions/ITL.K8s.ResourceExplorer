@@ -2,6 +2,7 @@ import asyncio
 import base64
 import yaml
 import os
+import time
 from datetime import datetime
 from fastapi import HTTPException, WebSocket
 from kubernetes import client
@@ -14,6 +15,14 @@ from v1.models.models import PersistentVolume, PersistentVolumeClaim, StorageCla
 import traceback
 import logging
 
+# Import metrics (with fallback if not available)
+try:
+    from base.metrics import metrics
+    METRICS_AVAILABLE = True
+except ImportError:
+    METRICS_AVAILABLE = False
+    metrics = None
+
 # Load Kubernetes Configurations
 load_k8s_config()
 
@@ -22,6 +31,29 @@ apps_v1_api = client.AppsV1Api()
 apis_api = client.ApisApi()
 networking_v1_api = client.NetworkingV1Api()
 storage_v1_api = client.StorageV1Api()
+
+def track_k8s_request(resource_type: str, action: str, namespace: str = "cluster-scope"):
+    """
+    Decorator to track Kubernetes API requests with metrics.
+    """
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            if METRICS_AVAILABLE and metrics:
+                start_time = time.time()
+                try:
+                    result = func(*args, **kwargs)
+                    duration = time.time() - start_time
+                    metrics.record_k8s_request(resource_type, action, namespace, "success", duration)
+                    return result
+                except Exception as e:
+                    duration = time.time() - start_time
+                    status = "error" if not isinstance(e, HTTPException) else "http_error"
+                    metrics.record_k8s_request(resource_type, action, namespace, status, duration)
+                    raise e
+            else:
+                return func(*args, **kwargs)
+        return wrapper
+    return decorator
 
 def get_all_resource_types():
     """
@@ -173,6 +205,7 @@ async def list_ingresses(namespace: str) -> list:
     except ApiException as e:
         raise ApiException(f"Error retrieving Ingresses in namespace '{namespace}': {e.reason}")
 
+@track_k8s_request("node", "list", "cluster-scope")
 async def list_nodes() -> list:
     """
     Retrieves a list of all Nodes in the Kubernetes cluster, including their status and resource usage.
